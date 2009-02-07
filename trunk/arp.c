@@ -1,11 +1,4 @@
-/*! \file "arp.c" \brief Die Arp-Funktionlitaet */
-//***************************************************************************
-//*            arp.c
-//*
-//*  Mon Aug 28 22:31:14 2006
-//*  Copyright  2006  sharandac
-//*  Email sharandac(at)snafu.de
-//****************************************************************************/
+/*! \file "arp.c" \brief Implementation of the arp protocol */
 ///	\ingroup network
 ///	\defgroup ARP ARP-Funktionen (arp.c)
 ///	\code #include "arp.h" \endcode
@@ -41,7 +34,7 @@
 struct ARP_TABLE ARPtable[ MAX_ARPTABLE_ENTRYS ];
 struct ARP_TABLE *ARP_table;
 
-void arp( unsigned int packet_lenght, unsigned char *ethernetbuffer)
+void arp (unsigned int packet_length, unsigned char *ethernetbuffer)
 {
 	unsigned char i;
 
@@ -70,7 +63,7 @@ void arp( unsigned int packet_lenght, unsigned char *ethernetbuffer)
 			ETH_packet->ETH_sourceMac[i] = maMac[i];
 		}
 		
-		sendEthernetframe( packet_lenght, ethernetbuffer);
+		sendEthernetframe (packet_length, ethernetbuffer);
 
 		break;
 

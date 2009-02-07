@@ -1,11 +1,4 @@
-/*! \file "arp.h" \brief Die Arp-Funktionlitaet */
-//***************************************************************************
-//*            arp.h
-//*
-//*  Mon Aug 28 22:31:14 2006
-//*  Copyright  2006  sharandac
-//*  Email sharandac(at)snafu.de
-//****************************************************************************/
+/*! \file "arp.h" \brief Implementation of the arp protocol */
 ///	\ingroup network
 ///	\defgroup ARP ARP-Funktionen (arp.h)
 //****************************************************************************/
@@ -29,8 +22,8 @@
 
 	#define __ARP_H__
 
-	extern void arp( unsigned int packet_lenght, unsigned char *buffer);
-	unsigned int GetIP2MAC( unsigned long IP, unsigned char * MACbuffer );
+	extern void arp (unsigned int packet_length, unsigned char *buffer);
+	unsigned int GetIP2MAC (unsigned long IP, unsigned char * MACbuffer);
 
 	#define MAX_ARPTABLE_ENTRYS 1
 	

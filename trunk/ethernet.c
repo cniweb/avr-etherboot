@@ -36,7 +36,7 @@ void ethernet(void)
 	unsigned int packet_length;
 
 	// hole ein Frame
-	packet_length = getEthernetframe( MAX_FRAMELEN, ethernetbuffer);
+	packet_length = getEthernetframe (MAX_FRAMELEN, ethernetbuffer);
 
 	// wenn Frame vorhanden packet_lenght != 0
 	// arbeite so lange die Frames ab bis keine mehr da sind
@@ -62,15 +62,15 @@ void ethernet(void)
 /* -----------------------------------------------------------------------------------------------------------
 Holt ein Ethernetframe
 ------------------------------------------------------------------------------------------------------------*/
-unsigned int getEthernetframe( unsigned int maxlen, unsigned char *ethernetbuffer)
+unsigned int getEthernetframe (unsigned int maxlen, unsigned char *ethernetbuffer)
 {
-	return( enc28j60PacketReceive( maxlen , ethernetbuffer) );
+	return (enc28j60PacketReceive( maxlen , ethernetbuffer));
 }
 	
 /* -----------------------------------------------------------------------------------------------------------
 Sendet ein Ethernetframe
 ------------------------------------------------------------------------------------------------------------*/
-void sendEthernetframe( unsigned int packet_lenght, unsigned char *ethernetbuffer)
+void sendEthernetframe (unsigned int packet_lenght, unsigned char *ethernetbuffer)
 {
 	//timer1_msec_RemoveCallbackFunction ();
 	TIMER1_msec_CallbackFunc = NULL;
@@ -82,7 +82,7 @@ void sendEthernetframe( unsigned int packet_lenght, unsigned char *ethernetbuffe
 /* -----------------------------------------------------------------------------------------------------------
 Erstellt den richtigen Ethernetheader zur passenden Verbindung die gerade mit TCP_socket gewählt ist
 ------------------------------------------------------------------------------------------------------------*/
-void MakeETHheader( unsigned char * MACadress , unsigned char * ethernetbuffer )
+void MakeETHheader (unsigned char * MACadress , unsigned char * ethernetbuffer)
 {
 	struct ETH_header *ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;

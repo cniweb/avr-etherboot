@@ -1,10 +1,3 @@
-/***************************************************************************
- *            ip.c
- *
- *  Sat Jun  3 17:25:42 2006
- *  Copyright  2006  User
- *  Email
- ****************************************************************************/
 #include "config.h"
 #include "arp.h"
 #include "ip.h"
@@ -30,12 +23,12 @@ void ip_init (void)
 
 }
 
-void ip (unsigned int packet_lenght , unsigned char *buffer)
+void ip (unsigned int packet_length , unsigned char *buffer)
 {
 
 	if (((struct IP_header *)&buffer[ETHERNET_HEADER_LENGTH])->IP_Protocol == 0x11)
 	{
-          udp (packet_lenght , buffer);
+          udp (packet_length , buffer);
 	}
 }
 

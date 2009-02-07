@@ -1,11 +1,4 @@
-/*! \file "timer1.c" \brief Timer 1 als Zeitbasis benutzen */
-//***************************************************************************
-//*            timer.c
-//*
-//*  Sun Jul 16 12:52:34 2006
-//*  Copyright  2006  sharandac
-//*  Email sharandac(at)snafu.de
-//****************************************************************************/
+/*! \file "timer1.c" \brief Timer1 functions */
 ///	\ingroup hardware
 ///	\defgroup TIMER1 Timer 1 als Zeitbasis benutzen (timer1.c)
 ///	\code #include "timer1.h" \endcode

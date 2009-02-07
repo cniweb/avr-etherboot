@@ -29,7 +29,7 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 //@{
-int Checksum_16 (unsigned char * pointer, unsigned int headerlenght)
+int Checksum_16 (unsigned char * pointer, unsigned int headerlength)
 {
 	unsigned long checksum = 0x0;
 	unsigned int result;
@@ -37,18 +37,18 @@ int Checksum_16 (unsigned char * pointer, unsigned int headerlenght)
 	unsigned char DataL;
 	
 	//Jetzt werden alle Packete in einer While Schleife addiert
-	while( headerlenght > 1)
+	while( headerlength > 1)
 	{
 		DataH=*pointer++;
 		DataL=*pointer++;
 		result =~ ((DataH << 8)+ DataL);
 		checksum = checksum + result;
 		//decrimiert Länge von TCP Headerschleife um 2
-		headerlenght -=2 ;
+		headerlength -=2 ;
 	}
 
 	//Ist der Wert result16 ungerade ist DataL = 0
-	if( headerlenght > 0)
+	if( headerlength > 0)
 	{
 		DataH=*pointer;
 		result =~ (DataH << 8);

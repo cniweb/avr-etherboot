@@ -12,7 +12,7 @@
 
 	#define __CHECKSUM_H__
 	
-	int Checksum_16 (unsigned char * pointer, unsigned int headerlenght);
+	int Checksum_16 (unsigned char * pointer, unsigned int headerlength);
 
 #endif
 //@}

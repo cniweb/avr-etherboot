@@ -1,11 +1,4 @@
-/*! \file timer1.h \brief Timer 1 als Zeitbasis benutzen */
-/***************************************************************************
- *            timer.h
- *
- *  Sun Jul 16 12:52:44 2006
- *  Copyright  2006  User
- *  Email
- ****************************************************************************/
+/*! \file timer1.h \brief Timer1 functions */
 ///	\ingroup hardware
 /*
  *  This program is free software; you can redistribute it and/or modify

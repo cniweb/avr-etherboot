@@ -226,7 +226,7 @@ void enc28j60PhyWrite(unsigned char address, unsigned int data)
 void enc28j60Init(void)
 {
 	// initialize I/O
-	SPI_init (SPI_HALF_SPEED);
+	SPI_init ();
 
 	/// Hardware-Reset
 	DDRB |= (1<<PB1);
@@ -306,7 +306,7 @@ void enc28j60Init(void)
 void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 {
 	// Set the write pointer to start of transmit buffer area
-	enc28j60Write(EWRPTL, TXSTART_INIT);
+	enc28j60Write(EWRPTL, (uint8_t)TXSTART_INIT);
 	enc28j60Write(EWRPTH, TXSTART_INIT>>8);
 	
 	// Set the TXND pointer to correspond to the packet size given

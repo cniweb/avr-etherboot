@@ -1,11 +1,3 @@
-/***************************************************************************
- *            network.h
- *
- *  Fri Sep  1 10:08:50 2006
- *  Copyright  2006  User
- *  Email
- ****************************************************************************/
-
 /*
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

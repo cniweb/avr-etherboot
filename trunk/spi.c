@@ -1,12 +1,7 @@
-/*!\file spi.c \brief Stellt die SPI-Schnittstelle bereit */
-//***************************************************************************
-//*            spi.c
-//*
-//*  Mon Jul 31 21:46:47 2006
-//*  Copyright  2006  User
-//*  Email
+/*!\file spi.c \brief Implementation of SPI Communication */
+
 ///	\ingroup hardware
-///	\defgroup SPI Die SPI-Schnittstelle (spi.c)
+///	\defgroup SPI SPI-Interface (spi.c)
 ///	\code #include "spi.h" \endcode
 ///	\par Uebersicht
 ///		Die SPI-Schnittstelle fuer den AVR-Controller
@@ -31,15 +26,13 @@
 #include <avr/io.h>
 
 #include "config.h"
-
-unsigned char SPI_InitState = 0;
  
 /* -----------------------------------------------------------------------------------------------------------*/
 /*! Die Init fuer dir SPI-Schnittstelle. Es können verschiedene Geschwindigkeiten eingestellt werden.
  * \param 	Option		Hier kann die Geschwindigkeit der SPI eingestellt werden.
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void SPI_init( unsigned int Options )
+void SPI_init (void)
 {
 
 	// MOSI, SCK, SS als Output
@@ -60,19 +53,12 @@ void SPI_init( unsigned int Options )
 	// Master mode
 	SPCR = (1<<MSTR) | (1<<SPE);
 	
-	if ( Options == SPI_HALF_SPEED )
-	{
-		SPSR |= 0<<SPI2X;
-		SPI_InitState = SPI_HALF_SPEED;
-	}
-          /*
-	if ( Options == SPI_FULL_SPEED )
-	{
-		SPSR |= 1<<SPI2X;
-		SPI_InitState = SPI_FULL_SPEED;
-	}
-        */
-	//return( 0 );
+	// SPI_HALF_SPEED
+	SPSR |= 0<<SPI2X;
+
+ 	/* SPI_FULL_SPEED
+	SPSR |= 1<<SPI2X;
+    */
 }
 
 /* -----------------------------------------------------------------------------------------------------------*/
@@ -83,19 +69,19 @@ void SPI_init( unsigned int Options )
  * \retval  Data	Der wert der gleichzeit empfangen wurde.
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-unsigned char SPI_ReadWrite( unsigned char Data )
+unsigned char SPI_ReadWrite (unsigned char Data)
 {
 	// daten senden
 	SPDR = Data;
 	// auf fertig warten
 
-	while(!(SPSR & (1<<SPIF)));
+	while (!(SPSR & (1<<SPIF)));
 
 	// empfangende daten einlesen
 	Data = SPDR;
 	// daten zurueckgeben
 			
-	return( Data );
+	return (Data);
 }
 
 //@}
