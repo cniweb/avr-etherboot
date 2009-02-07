@@ -22,6 +22,14 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+
+#define htons(A) ((((A) & 0xff00) >> 8) | (((A) & 0x00ff) << 8))
+#define htonl(A) ((((A) & 0xff000000) >> 24) | (((A) & 0x00ff0000) >> 8) | \
+                 (((A) & 0x0000ff00) << 8) | (((A) & 0x000000ff) << 24)) 
+#define ntohs htons 
+#define ntohl htonl
+
+
 #ifndef _UDP_H
 	#define _UDP_H
 
