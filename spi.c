@@ -54,7 +54,8 @@ void SPI_init (void)
 	SPCR = (1<<MSTR) | (1<<SPE);
 	
 	// SPI_HALF_SPEED
-	SPSR |= 0<<SPI2X;
+	SPSR &= ~(1<<SPI2X);
+	//SPSR |= 0<<SPI2X;
 
  	/* SPI_FULL_SPEED
 	SPSR |= 1<<SPI2X;
