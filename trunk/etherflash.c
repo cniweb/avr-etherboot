@@ -47,27 +47,19 @@ inline uint8_t hexToByte(uint8_t *buf, uint16_t idx)
   return val;
 }
 
+// interrupts have to be disabled when calling this function!
 void writeFLASHPage(void)
 {
     uint8_t sreg;
-    // Disable interrupts.
-    sreg = SREG;
-    cli();
 
     eeprom_busy_wait ();
 
-    boot_page_erase (currentAddress-2);		// Clear flash page
+    boot_page_erase_safe (currentAddress-2);		// Clear flash page
     boot_spm_busy_wait ();      			// Wait until the memory is erased.					
-
-    boot_page_write (currentAddress-2);     // Store buffer in flash page.
+	
+    boot_page_write_safe (currentAddress-2);     // Store buffer in flash page.
     boot_spm_busy_wait();       			// Wait until the memory is written.
 
-    // Reenable RWW-section again. We need this if we want to jump back
-    // to the application after bootloading.
-    boot_rww_enable();
-
-    // Re-enable interrupts (if they were ever enabled).
-    SREG = sreg;
     bytesInBootPage = 0;
 }
 
@@ -91,7 +83,7 @@ void processLineBuffer(uint8_t bytes)
 			// copy data to boot page
 			for (i=0; i<len; i+=2)
 			{
-                boot_page_fill (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
+                boot_page_fill_safe (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
 				currentAddress += 2;
 				bytesInBootPage += 2;
 				if (bytesInBootPage == SPM_PAGESIZE)
@@ -165,6 +157,15 @@ void jumpToApplication(void)
 		
 	#endif
 
+	// disable Timer1 Overflow Interrupt
+	//timer1_deinit();
+	// disable SPI
+	//SPCR &= ~(1<<SPE);
+    
+	// Reenable RWW-section again. We need this if we want to jump back
+    // to the application after bootloading.
+    boot_rww_enable_safe();
+
 	pApplication();
 
 }
@@ -207,6 +208,23 @@ int main(void)
 	
 	//DDRD |= (1<<PD2);
 	//DDRA |= 1+2+4+8+16;
+
+	// reset hardware register
+	// disable TWI
+	TWCR &= ~(1<<TWIE);
+	// disable INT2
+	GICR &= ~(1<<INT2);
+	DDRA = 0;
+	DDRB = 0;
+	DDRC = 0;
+	DDRD = 0;
+	PORTA = 0;
+	PORTB = 0;
+	PORTC = 0;
+	PORTD = 0;
+	// disable SPI
+	SPCR &= ~(1<<SPE);
+	
 	
 	timer1_init ();
 
@@ -225,7 +243,7 @@ int main(void)
 
 	ip_init ();
 
-	for (i=0;i<60;i++)
+	for (i=0;i<30;i++)
 		_delay_ms(35);
 
 	
@@ -257,7 +275,8 @@ int main(void)
 
 		if (sock.Bufferfill > 0)
 		{
-			
+			// disable interrupts while processing received packet
+			cli();
 			// check for data packet (00 03)
 			if (UDPRxBuffer[1] == 0x03)
 			{ 
@@ -280,8 +299,10 @@ int main(void)
 					
 						// mark buffer free
 						sock.Bufferfill = 0;
-
-						UDP_SendPacket (4);							
+						UDP_SendPacket (4);					
+		
+						// reenable interrupts to get next packet
+						sei();
 
 						break;
 					}
