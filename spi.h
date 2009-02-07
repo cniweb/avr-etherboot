@@ -1,10 +1,4 @@
-/*!\file spi.h \brief Stellt die SPI-Schnittstelle bereit*/
-//***************************************************************************
-//*            spi.h
-//*
-//*  Mon Jul 31 21:46:47 2006
-//*  Copyright  2006  User
-//*  Email
+/*!\file spi.h \brief Implementation of SPI Communication */
 ///	\ingroup hardware
 //****************************************************************************/
 //@{
@@ -29,7 +23,7 @@
 	
 	#include <avr/io.h>
 
-	void SPI_init (unsigned int Options);
+	void SPI_init (void);
 	unsigned char SPI_ReadWrite (unsigned char Data);
 
 	#define SPI_NOT_INIT	0x00

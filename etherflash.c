@@ -19,7 +19,6 @@
 #define true (1==1)
 #define false (!true)
 
-//uint8_t *macUDPBufferTFTP;
 uint8_t *macUDPBufferTFTP_send;
 
 uint16_t i;
@@ -58,10 +57,10 @@ void writeFLASHPage(void)
     eeprom_busy_wait ();
 
     boot_page_erase (currentAddress-2);		// Clear flash page
-    boot_spm_busy_wait ();      // Wait until the memory is erased.					
+    boot_spm_busy_wait ();      			// Wait until the memory is erased.					
 
     boot_page_write (currentAddress-2);     // Store buffer in flash page.
-    boot_spm_busy_wait();       // Wait until the memory is written.
+    boot_spm_busy_wait();       			// Wait until the memory is written.
 
     // Reenable RWW-section again. We need this if we want to jump back
     // to the application after bootloading.
@@ -229,34 +228,27 @@ int main(void)
 	for (i=0;i<60;i++)
 		_delay_ms(35);
 
-	// LM298 abschalten
-	//DDRB |= (1<<PB5) | (1<<PB6);
-	//PORTB &= ~((1<<PB5) | (1<<PB6));
-
 	
 	UDP_RegisterSocket (IP(255,255,255,255), 69);
 
-	//macUDPBufferTFTP = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGHT));
-	macUDPBufferTFTP_send = (ethernetbuffer_send + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGHT));
+	macUDPBufferTFTP_send = (ethernetbuffer_send + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 	
 	uint8_t lineBufferIdx;
 	uint16_t rxBufferIdx;
 	uint8_t lastPacket;
-	//uint16_t liTimeOut;
 
 	lineBufferIdx = 0;
 	lastPacket = FALSE;
-	//liTimeOut = 0;
 
 
 	// send RRQ
-	
 	// Requeststring liegt im EEPROM, um FLASH zu sparen
 	eeprom_read_block ((void*)macUDPBufferTFTP_send, (const void*)&maTFTPReqStr, 12);
 	
 	sock.Bufferfill = 0;
 	UDP_SendPacket (12);
 
+	// prepare send buffer for TFTP ACK packets
 	macUDPBufferTFTP_send[0]  = 0x00;
 	macUDPBufferTFTP_send[1]  = 0x04; //TFTP_ACK
 
@@ -265,7 +257,6 @@ int main(void)
 
 		if (sock.Bufferfill > 0)
 		{
-			//liTimeOut = 0;
 			
 			// check for data packet (00 03)
 			if (UDPRxBuffer[1] == 0x03)

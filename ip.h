@@ -18,7 +18,7 @@ extern unsigned long mlGateway;
 extern unsigned long mlDNSserver;
 
 void ip_init (void);
-void ip (unsigned int packet_lenght , unsigned char *buffer);
+void ip (unsigned int packet_length , unsigned char *buffer);
 
 #define IP_HEADER_LENGHT 20
 

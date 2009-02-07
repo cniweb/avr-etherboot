@@ -44,19 +44,18 @@
 #include "checksum.h"
 
 struct UDP_SOCKET sock;
-//struct UDP_SOCKET * UDP_socket;
 
 /* -----------------------------------------------------------------------------------------------------------*/
 /*! Hier findet die Bearbeitung des Packetes statt welches ein UDP-Packet enthaelt. Es wir versucht die 
  * Verbindung zuzuordnen, wenn dies nicht moeglich ist wird hier abgebrochen.
  * Danach wird der Inhalt dem Socket zugeordnet und Daten in den Puffer des Benutzer kopiert.
  * \warning Zu lange UDP-Packete werden abgeschnitten.
- * \param 	packet_lenght	Gibt die Packetgroesse in Byte an die das Packet lang ist.
+ * \param 	packet_length	Gibt die Packetgroesse in Byte an die das Packet lang ist.
  * \param	ethernetbuffer	Zeiger auf das Packet.
  * \return  NONE
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void udp( unsigned int packet_lenght, unsigned char * ethernetbuffer )
+void udp (unsigned int packet_length, unsigned char * ethernetbuffer)
 {
 	
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
@@ -70,17 +69,17 @@ void udp( unsigned int packet_lenght, unsigned char * ethernetbuffer )
 	{
 
 		// Größe der Daten eintragen
-		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HEADER_LENGHT;
+		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HEADER_LENGTH;
 
 		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
 
 
-		//UDPRxBuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGHT));
+		//UDPRxBuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
 		unsigned int Offset, i;
-		Offset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGHT;
+		Offset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGTH;
 		i = sock.Bufferfill;
 		
 		// Daten kopieren
@@ -102,7 +101,7 @@ void udp( unsigned int packet_lenght, unsigned char * ethernetbuffer )
  * \return  Beim erfolgreichen anlegen eines Socket wird die Socketnummer zurueck gegeben. Im Fehlerfall 0xffff.
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void UDP_RegisterSocket( unsigned long IP, unsigned int DestinationPort)
+void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort)
 {
 	unsigned char i;
 
@@ -111,7 +110,7 @@ void UDP_RegisterSocket( unsigned long IP, unsigned int DestinationPort)
 
 	sock.DestinationIP = IP;
 	sock.Bufferfill = 0;
-	//sock.Recivebuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGHT));
+	//sock.Recivebuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 
 	if ( IP == 0xffffffff )
 	{
@@ -138,7 +137,7 @@ void UDP_RegisterSocket( unsigned long IP, unsigned int DestinationPort)
  * \sa UDP_RegisterSocket , UDP_GetSocketState
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void UDP_SendPacket(unsigned int datalength)
+void UDP_SendPacket (unsigned int datalength)
 {
 
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
@@ -153,7 +152,7 @@ void UDP_SendPacket(unsigned int datalength)
         // MakeIPHeader
 	IP_packet->IP_Version_Headerlen = 0x45;
 	IP_packet->IP_TOS = 0x0;
-	IP_packet->IP_Totallenght = htons( IP_HEADER_LENGHT + UDP_HEADER_LENGHT + datalength );
+	IP_packet->IP_Totallenght = htons( IP_HEADER_LENGHT + UDP_HEADER_LENGTH + datalength );
 	IP_packet->IP_Identification = 0x1DAC;
 	IP_packet->IP_Flags = 0x40;
 	IP_packet->IP_Fragmentoffset = 0x0;
@@ -174,7 +173,7 @@ void UDP_SendPacket(unsigned int datalength)
 
 	// sendEthernetframe
 	sendEthernetframe (ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
-						+ UDP_HEADER_LENGHT + datalength, ethernetbuffer_send);
+						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer_send);
 
 }
 

@@ -1,12 +1,4 @@
 /*!\file udp.h \brief Definitionen fuer UDP */
-//***************************************************************************
-//*            udp.h
-//*
-//*  Mon Jul 31 21:47:03 2006
-//*  Copyright  2006  sharan
-//*  Email
-//*
-//****************************************************************************/
 /*
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,14 +15,15 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#define htons(A) ((((A) & 0xff00) >> 8) | (((A) & 0x00ff) << 8))
-#define htonl(A) ((((A) & 0xff000000) >> 24) | (((A) & 0x00ff0000) >> 8) | \
-                 (((A) & 0x0000ff00) << 8) | (((A) & 0x000000ff) << 24)) 
-#define ntohs htons 
-#define ntohl htonl
-
-
 #ifndef _UDP_H
+
+	#define htons(A) ((((A) & 0xff00) >> 8) | (((A) & 0x00ff) << 8))
+	#define htonl(A) ((((A) & 0xff000000) >> 24) | (((A) & 0x00ff0000) >> 8) | \
+                 (((A) & 0x0000ff00) << 8) | (((A) & 0x000000ff) << 24)) 
+	#define ntohs htons 
+	#define ntohl htonl
+
+
 	#define _UDP_H
 
     extern struct UDP_SOCKET sock;
@@ -46,7 +39,7 @@
 	 * \return  NONE
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	void udp( unsigned int packet_lenght, unsigned char * ethernetbuffer );
+	void udp (unsigned int packet_length, unsigned char * ethernetbuffer);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Sendet ein UDP-Packet an einen Host.
@@ -57,7 +50,7 @@
 	 * \sa UDP_RegisterSocket , UDP_GetSocketState
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	void UDP_SendPacket(unsigned int Datalenght);
+	void UDP_SendPacket (unsigned int datalength);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Reistriert ein Socket in den die Daten fuer ein Verbindung gehalten werden um die ausgehenden und einghenden UDP-Packet zuzuordnen.
@@ -68,7 +61,7 @@
 	 * \return  Beim erfolgreichen anlegen eines Socket wird die Socketnummer zurueck gegeben. Im Fehlerfall 0xffff.
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	void UDP_RegisterSocket(unsigned long IP, unsigned int DestinationPort);
+	void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Reistriert ein Socket in den die Daten fuer ein Verbindung gehalten werden um die ausgehenden und einghenden UDP-Packet zuzuordnen.
@@ -86,7 +79,7 @@
 	 * \return  Den Socketstatus.
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	unsigned int UDP_GetSocketState(void);
+	unsigned int UDP_GetSocketState (void);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Gibt die Anzahl der Byte aus die sich im Puffer befinden. Diese Abfrage macht nur sinn in Verbindung mit
@@ -97,7 +90,7 @@
 	 *\sa UDP_GetSocketState, UDP_FreeBuffer
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	unsigned int UDP_GetByteInBuffer(void);
+	unsigned int UDP_GetByteInBuffer (void);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Gibt den UDP-Puffer wieder zum empfang frei. Danach werden wieder UDP-Daten angenommen und in den Puffer kopiert.
@@ -105,7 +98,7 @@
 	 * \return	NONE
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	 void UDP_FreeBuffer(void);
+	 void UDP_FreeBuffer (void);
 	
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Gibt das Socket wieder freu und beendet die Verbindung. Alle UDP-Packet die dann von diesen Socket empfangen werden, werden verworfen.
@@ -114,14 +107,11 @@
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
 
-	unsigned int UDP_GetSocket( unsigned char * ethernetbuffer );
-	void MakeUDPheader(unsigned int Datalenght, unsigned char * ethernetbuffer );
+	unsigned int UDP_GetSocket (unsigned char * ethernetbuffer);
+	void MakeUDPheader  (unsigned int Datalength, unsigned char * ethernetbuffer);
 
-	#define MAX_UDP_CONNECTIONS 4
-	#define UDP_HEADER_LENGHT 8
-	
-	
-	
+	#define UDP_HEADER_LENGTH 8
+		
 	#define SOCKET_NOT_USE		0x00			// SOCKET ist Frei
 	#define SOCKET_READY		0x10			// Socket ist Bereit zur Benutzung
 	#define UDP_SOCKET_BUSY			0x20			// SOCKET belegt ...
@@ -148,7 +138,6 @@
 		volatile unsigned char MACadress[6];
 		volatile unsigned int Bufferlenght;
 		volatile unsigned int Bufferfill;
-		//volatile unsigned char * Recivebuffer;
 	};
 	
 
