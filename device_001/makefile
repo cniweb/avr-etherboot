@@ -89,7 +89,7 @@ OBJDIR = .
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = ../etherflash.c  ../timer1.c ../checksum.c ../math.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../ip.c ../udp.c eemem.c
+SRC = ../etherflash.c  ../timer1.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../ip.c ../udp.c eemem.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
@@ -165,6 +165,7 @@ CFLAGS += -fpack-struct
 CFLAGS += -fshort-enums
 CFLAGS += -Wall
 CFLAGS += -Wstrict-prototypes
+CFLAGS += -mcall-prologues
 #CFLAGS += -mshort-calls
 #CFLAGS += -fno-unit-at-a-time
 #CFLAGS += -Wundef

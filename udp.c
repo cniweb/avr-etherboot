@@ -41,6 +41,7 @@
 #include "udp.h"
 #include "enc28j60.h"
 #include "timer1.h"
+#include "checksum.h"
 
 struct UDP_SOCKET sock;
 //struct UDP_SOCKET * UDP_socket;
@@ -69,7 +70,7 @@ void udp( unsigned int packet_lenght, unsigned char * ethernetbuffer )
 	{
 
 		// Größe der Daten eintragen
-		sock.Bufferfill = ChangeEndian16bit (UDP_packet->UDP_Datalenght) - UDP_HEADER_LENGHT;
+		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HEADER_LENGHT;
 
 		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
@@ -105,7 +106,7 @@ void UDP_RegisterSocket( unsigned long IP, unsigned int DestinationPort)
 {
 	unsigned char i;
 
-	sock.DestinationPort = ChangeEndian16bit (DestinationPort);
+	sock.DestinationPort = htons(DestinationPort);
 	sock.SourcePort =~ DestinationPort;
 
 	sock.DestinationIP = IP;
@@ -152,7 +153,7 @@ void UDP_SendPacket(unsigned int datalength)
         // MakeIPHeader
 	IP_packet->IP_Version_Headerlen = 0x45;
 	IP_packet->IP_TOS = 0x0;
-	IP_packet->IP_Totallenght = ChangeEndian16bit ( IP_HEADER_LENGHT + UDP_HEADER_LENGHT + datalength );
+	IP_packet->IP_Totallenght = htons( IP_HEADER_LENGHT + UDP_HEADER_LENGHT + datalength );
 	IP_packet->IP_Identification = 0x1DAC;
 	IP_packet->IP_Flags = 0x40;
 	IP_packet->IP_Fragmentoffset = 0x0;
@@ -161,15 +162,15 @@ void UDP_SendPacket(unsigned int datalength)
 	IP_packet->IP_Headerchecksum = 0x0;
 	IP_packet->IP_SourceIP = mlIP;
 	IP_packet->IP_DestinationIP = sock.DestinationIP;
-	IP_packet->IP_Headerchecksum = ChangeEndian16bit( Checksum_16( &ethernetbuffer_send[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) );
+	IP_packet->IP_Headerchecksum = htons( Checksum_16( &ethernetbuffer_send[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) );
 
 	// MakeUDPheader
 	UDP_packet->UDP_DestinationPort = sock.DestinationPort;
 	UDP_packet->UDP_SourcePort = sock.SourcePort;
 	UDP_packet->UDP_Checksum = 0;
-	UDP_packet->UDP_Datalenght = ChangeEndian16bit (8 + datalength);
+	UDP_packet->UDP_Datalenght = htons(8 + datalength);
 
-	MakeETHheader (sock.MACadress, ethernetbuffer_send);
+	MakeETHheader ((unsigned char *)sock.MACadress, ethernetbuffer_send);
 
 	// sendEthernetframe
 	sendEthernetframe (ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
