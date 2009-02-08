@@ -11,8 +11,8 @@
 #include "ethernet.h"
 #include "arp.h"
 #include "enc28j60.h"
-#include "timer1.h"
 #include "ip.h"
+#include "udp.h"
 #include "config.h"
 #include "eemem.h"
 
@@ -30,13 +30,13 @@ unsigned char ethernetbuffer[MAX_FRAMELEN];
 unsigned char ethernetbuffer_send[100];
 unsigned char UDPRxBuffer[516];
 
-void ethernet(void)
+inline void ethernet(void)
 {
 
 	unsigned int packet_length;
 
 	// hole ein Frame
-	packet_length = getEthernetframe (MAX_FRAMELEN, ethernetbuffer);
+	packet_length = enc28j60PacketReceive (MAX_FRAMELEN, ethernetbuffer);
 
 	// wenn Frame vorhanden packet_lenght != 0
 	// arbeite so lange die Frames ab bis keine mehr da sind
@@ -52,33 +52,18 @@ void ethernet(void)
 				break;
 
 			case 0x0008:
-				ip (packet_length , ethernetbuffer);
+				if (((struct IP_header *)&ethernetbuffer[ETHERNET_HEADER_LENGTH])->IP_Protocol == 0x11)
+				{
+					udp (packet_length);
+				}
 				break;
 		}
 
 	}
 }
 
-/* -----------------------------------------------------------------------------------------------------------
-Holt ein Ethernetframe
-------------------------------------------------------------------------------------------------------------*/
-unsigned int getEthernetframe (unsigned int maxlen, unsigned char *ethernetbuffer)
-{
-	return (enc28j60PacketReceive( maxlen , ethernetbuffer));
-}
-	
-/* -----------------------------------------------------------------------------------------------------------
-Sendet ein Ethernetframe
-------------------------------------------------------------------------------------------------------------*/
-void sendEthernetframe (unsigned int packet_lenght, unsigned char *ethernetbuffer)
-{
-	//timer1_msec_RemoveCallbackFunction ();
-	TIMER1_msec_CallbackFunc = NULL;
-	enc28j60PacketSend( packet_lenght, ethernetbuffer );
-	//timer1_msec_RegisterCallbackFunction (ethernet);
-	TIMER1_msec_CallbackFunc = ethernet;
-}
-	
+
+
 /* -----------------------------------------------------------------------------------------------------------
 Erstellt den richtigen Ethernetheader zur passenden Verbindung die gerade mit TCP_socket gewählt ist
 ------------------------------------------------------------------------------------------------------------*/

@@ -21,7 +21,6 @@
 #include <util/delay.h>
 #include "enc28j60.h"
 #include "spi.h"
-#include "timer1.h"
 #include "math.h"
 #include "config.h"
 
