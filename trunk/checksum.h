@@ -2,8 +2,8 @@
 /***************************************************************************
  *            checksum.h
  *
- *  Sat Jun  3 20:17:22 2006
- *  Copyright  2006  User
+*  Sun Feb  8 2009
+*  Copyright  Andreas Vogt
  *  Email
  ****************************************************************************/
 ///	\ingroup math
@@ -12,7 +12,7 @@
 
 	#define __CHECKSUM_H__
 	
-	int Checksum_16 (unsigned char * pointer, unsigned int headerlength);
+	uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght);
 
 #endif
 //@}

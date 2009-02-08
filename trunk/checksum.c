@@ -2,8 +2,8 @@
 //***************************************************************************
 //*            checksum.c
 //*
-//*  Sat Jun  3 20:17:31 2006
-//*  Copyright  2006  User
+//*  Sun Feb  8 2009
+//*  Copyright  Andreas Vogt
 //*  Email
 //****************************************************************************/
 ///	\ingroup math
@@ -12,6 +12,8 @@
 ///	\par Uebersicht
 ///		Berechnung der 16.Bit Checksumme eines Speicherbereiches im RAM.
 /// Benotig z.B. fuer die Checksumme von Datenpacketen wie in TCP/IP.
+/// Das Ergebnis kann direkt übernommen werden, ein htons() ist nicht
+/// mehr nötig.
 //****************************************************************************/
 /*
  *  This program is free software; you can redistribute it and/or modify
@@ -29,36 +31,43 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 //@{
-int Checksum_16 (unsigned char * pointer, unsigned int headerlength)
+
+#include <stdint.h>
+
+uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght)
 {
-	unsigned long checksum = 0x0;
-	unsigned int result;
-	unsigned char DataH;
-	unsigned char DataL;
+	struct TPWORDACC
+	{
+		uint16_t DataL;
+		uint16_t DataH;
+	};
+	union
+	{
+		struct TPWORDACC nWordAcc;
+		unsigned long lLongAcc;
+	} checksum;
+	checksum.lLongAcc = 0x0;
+	uint16_t *pP16 = (uint16_t *)pointer;
 	
 	//Jetzt werden alle Packete in einer While Schleife addiert
-	while( headerlength > 1)
+	while( headerlenght > 0)
 	{
-		DataH=*pointer++;
-		DataL=*pointer++;
-		result =~ ((DataH << 8)+ DataL);
-		checksum = checksum + result;
-		//decrimiert Länge von TCP Headerschleife um 2
-		headerlength -=2 ;
+		if( headerlenght == 1)
+		{	// headerlenght ist ungerade, füge eine null hinzu (DataH einfach weglassen)
+			checksum.lLongAcc += (*pP16 & 0x00ff);
+			break;
+		}
+		else
+		{
+			checksum.lLongAcc += *pP16++;
+			headerlenght -=2 ;
+		}
 	}
 
-	//Ist der Wert result16 ungerade ist DataL = 0
-	if( headerlength > 0)
-	{
-		DataH=*pointer;
-		result =~ (DataH << 8);
-		checksum = checksum + result;
-	}
-
-	//Komplementbildung (addiert Long INT_H Byte mit Long INT L Byte)
-	checksum = ((checksum & 0x0000FFFF)+ ((checksum & 0xFFFF0000) >> 16));
-	checksum = ((checksum & 0x0000FFFF)+ ((checksum & 0xFFFF0000) >> 16));
-	checksum = (checksum & 0x0000FFFF);
-	return (checksum);
+	//Komplementbildung (addiert Long INT_H Word mit Long INT L Word)
+	while (checksum.nWordAcc.DataH)
+		checksum.lLongAcc = checksum.nWordAcc.DataL + checksum.nWordAcc.DataH;
+	return ~(checksum.nWordAcc.DataL);
 }
+
 //@}

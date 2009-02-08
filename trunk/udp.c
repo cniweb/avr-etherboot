@@ -161,7 +161,7 @@ void UDP_SendPacket (unsigned int datalength)
 	IP_packet->IP_Headerchecksum = 0x0;
 	IP_packet->IP_SourceIP = mlIP;
 	IP_packet->IP_DestinationIP = sock.DestinationIP;
-	IP_packet->IP_Headerchecksum = htons( Checksum_16( &ethernetbuffer_send[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) );
+	IP_packet->IP_Headerchecksum = Checksum_16( &ethernetbuffer_send[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
 
 	// MakeUDPheader
 	UDP_packet->UDP_DestinationPort = sock.DestinationPort;
