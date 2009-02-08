@@ -39,7 +39,7 @@
 	 * \return  NONE
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	void udp (unsigned int packet_length, unsigned char * ethernetbuffer);
+	void udp (unsigned int packet_length);
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Sendet ein UDP-Packet an einen Host.

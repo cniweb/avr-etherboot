@@ -40,7 +40,6 @@
 #include "ip.h"
 #include "udp.h"
 #include "enc28j60.h"
-#include "timer1.h"
 #include "checksum.h"
 
 struct UDP_SOCKET sock;
@@ -55,7 +54,7 @@ struct UDP_SOCKET sock;
  * \return  NONE
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void udp (unsigned int packet_length, unsigned char * ethernetbuffer)
+void udp (unsigned int packet_length)
 {
 	
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
@@ -73,9 +72,6 @@ void udp (unsigned int packet_length, unsigned char * ethernetbuffer)
 
 		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
-
-
-		//UDPRxBuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
 		unsigned int Offset, i;
@@ -172,7 +168,7 @@ void UDP_SendPacket (unsigned int datalength)
 	MakeETHheader ((unsigned char *)sock.MACadress, ethernetbuffer_send);
 
 	// sendEthernetframe
-	sendEthernetframe (ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
+	enc28j60PacketSend(ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
 						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer_send);
 
 }

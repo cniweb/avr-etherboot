@@ -1,3 +1,28 @@
+/*! \file "etherflash.c" \brief main bootloader routine  */
+//***************************************************************************
+//*            etherflash.c
+//*
+//*  Sun Feb  8 2009
+//*  Copyright  Jan Krause
+//*  Email issjagut [ at ] gmail.com
+//****************************************************************************/
+/*
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+//@{
+
 #include "config.h"
 #include <avr/io.h>
 #include <avr/wdt.h>
@@ -12,7 +37,6 @@
 #include "ethernet.h"
 #include "network.h"
 #include "udp.h"
-#include "timer1.h"
 #include "etherflash.h"
 #include "enc28j60.h"
 
@@ -26,6 +50,8 @@ uint16_t i;
 uint8_t lineBuffer[46];
 uint32_t currentAddress = 0;
 uint16_t bytesInBootPage = 0;
+
+void initializeHardware (void);
 
 inline uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 {
@@ -50,7 +76,6 @@ inline uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 // interrupts have to be disabled when calling this function!
 void writeFLASHPage(void)
 {
-    uint8_t sreg;
 
     eeprom_busy_wait ();
 
@@ -120,95 +145,20 @@ void processLineBuffer(uint8_t bytes)
 
 void jumpToApplication(void)
 {
-
-	cli();
-	uint8_t temp;
-	
-	#ifdef __AVR_ATmega2561__ 
-
-		// Get MCUCR
-		temp = MCUCR;
-		// Enable change of Interrupt Vectors
-		MCUCR = (temp | (1<<IVCE));
-		// Move interrupts to App Flash section 
-		MCUCR = (temp & ~(1<<IVSEL));
-
-	#else
-	
-		#ifdef __AVR_ATmega644__
-
-			// Get MCUCR
-			temp = MCUCR;
-			// Enable change of Interrupt Vectors
-			MCUCR = (temp | (1<<IVCE));
-			// Move interrupts to App Flash section 
-			MCUCR = (temp & ~(1<<IVSEL));
-		
-		#else
-	
-			// Use GICR on Mega32
-			temp = GICR;
-			// Enable change of Interrupt Vectors
-			GICR = temp|(1<<IVCE);
-			// Move interrupts to App Flash section 
-			GICR = (temp & ~(1<<IVSEL));
-
-		#endif
-		
-	#endif
-
-	// disable Timer1 Overflow Interrupt
-	//timer1_deinit();
-	// disable SPI
-	//SPCR &= ~(1<<SPE);
     
 	// Reenable RWW-section again. We need this if we want to jump back
     // to the application after bootloading.
     boot_rww_enable_safe();
 
+	initializeHardware();
+
 	pApplication();
 
 }
 
-int main(void)
+
+void initializeHardware (void)
 {
-
-	// Move interrupts to bootsection
-	volatile uint8_t temp;
-	
-	#ifdef __AVR_ATmega2561__
-	
-		// Get MCUCR
-		temp = MCUCR;
-		// Enable change of Interrupt Vectors
-		MCUCR = temp|(1<<IVCE);
-		// Move interrupts to Boot Flash section 
-		MCUCR = temp|(1<<IVSEL);
-		
-	#else
-		#ifdef __AVR_ATmega644__
-
-			// Get MCUCR
-			temp = MCUCR;
-			// Enable change of Interrupt Vectors
-			MCUCR = temp|(1<<IVCE);
-			// Move interrupts to Boot Flash section 
-			MCUCR = temp|(1<<IVSEL);
-
-		#else
-			// Use GICR on Mega32
-			temp = GICR;
-			// Enable change of Interrupt Vectors
-			GICR = temp|(1<<IVCE);
-			// Move interrupts to Boot Flash section 
-			GICR = temp|(1<<IVSEL);
-		#endif
-					
-	#endif
-	
-	//DDRD |= (1<<PD2);
-	//DDRA |= 1+2+4+8+16;
-
 	// reset hardware register
 	// disable TWI
 	TWCR &= ~(1<<TWIE);
@@ -224,11 +174,18 @@ int main(void)
 	PORTD = 0;
 	// disable SPI
 	SPCR &= ~(1<<SPE);
-	
-	
-	timer1_init ();
+}
 
-	sei();
+int main(void)
+{
+	// disable interrupts
+	cli();
+	
+	//DDRD |= (1<<PD2);
+	//DDRA |= 1+2+4+8+16;
+
+	initializeHardware();
+	
 
 	// Mac-Addresse aus EEPROM lesen
 	eeprom_read_block (&maMac, (const void*)&maMacEEP, 6);
@@ -236,10 +193,7 @@ int main(void)
 	enc28j60Init();
 
 	// Alle Packet lesen und in leere laufen lassen damit ein definierter zustand herrscht
-	while ( getEthernetframe( MAX_FRAMELEN, ethernetbuffer) != 0 ) { };
-
-	// gibt Ethernet frei
-	TIMER1_msec_CallbackFunc = ethernet;
+	while (enc28j60PacketReceive (MAX_FRAMELEN, ethernetbuffer) != 0 ) {};
 
 	ip_init ();
 
@@ -256,7 +210,7 @@ int main(void)
 	uint8_t lastPacket;
 
 	lineBufferIdx = 0;
-	lastPacket = FALSE;
+	lastPacket = false;
 
 
 	// send RRQ
@@ -273,10 +227,10 @@ int main(void)
 	while (1)
 	{
 
+		ethernet();
+		
 		if (sock.Bufferfill > 0)
 		{
-			// disable interrupts while processing received packet
-			cli();
 			// check for data packet (00 03)
 			if (UDPRxBuffer[1] == 0x03)
 			{ 
@@ -300,10 +254,6 @@ int main(void)
 						// mark buffer free
 						sock.Bufferfill = 0;
 						UDP_SendPacket (4);					
-		
-						// reenable interrupts to get next packet
-						sei();
-
 						break;
 					}
 					else
@@ -336,15 +286,7 @@ int main(void)
 		}
 		else
 		{
-			// no data
-			/*
-			_delay_ms(1);
-			if (++liTimeOut > 4000)
-			{
-				// Timeout -> reboot to application
-				jumpToApplication();
-			}
-			*/
+			_delay_ms(2);
 		}
 
 	}
@@ -352,57 +294,3 @@ int main(void)
 	return(0);
 
 }
-
-/*
-EMPTY_INTERRUPT(INT0_vect); //);
-EMPTY_INTERRUPT(INT1_vect); //			_vect); //OR(2)
-EMPTY_INTERRUPT(INT2_vect); //			_vect); //OR(3)
-EMPTY_INTERRUPT(INT3_vect); //			_vect); //OR(4)
-EMPTY_INTERRUPT(INT4_vect); //			_vect); //OR(5)
-EMPTY_INTERRUPT(INT5_vect); //			_vect); //OR(6)
-EMPTY_INTERRUPT(INT6_vect); //			_vect); //OR(7)
-EMPTY_INTERRUPT(INT7_vect); //			_vect); //OR(8)
-
-EMPTY_INTERRUPT(PCINT0_vect); //			_vect); //OR(9)
-EMPTY_INTERRUPT(PCINT1_vect); //			_vect); //OR(10)
-EMPTY_INTERRUPT(_VECTOR(11));
-EMPTY_INTERRUPT(WDT_vect); //			_vect); //OR(12)
-EMPTY_INTERRUPT(TIMER2_COMPA_vect); //		_vect); //OR(13)
-EMPTY_INTERRUPT(TIMER2_COMPB_vect); //		_vect); //OR(14)
-EMPTY_INTERRUPT(TIMER2_OVF_vect); //			_vect); //OR(15)
-EMPTY_INTERRUPT(TIMER1_CAPT_vect); //		_vect); //OR(16)
-EMPTY_INTERRUPT(TIMER1_COMPA_vect); //		_vect); //OR(17)
-EMPTY_INTERRUPT(TIMER1_COMPB_vect); //		_vect); //OR(18)
-EMPTY_INTERRUPT(TIMER1_COMPC_vect); //		_vect); //OR(19)
-//EMPTY_INTERRUPT(TIMER1_OVF_vect); //			_vect); //OR(20)
-EMPTY_INTERRUPT(TIMER0_COMPA_vect); //		_vect); //OR(21)
-EMPTY_INTERRUPT(TIMER0_COMPB_vect); //		_vect); //OR(22)
-EMPTY_INTERRUPT(TIMER0_OVF_vect); //			_vect); //OR(23)
-EMPTY_INTERRUPT(SPI_STC_vect); //			_vect); //OR(24)
-EMPTY_INTERRUPT(USART0_RX_vect); //			_vect); //OR(25)
-EMPTY_INTERRUPT(USART0_UDRE_vect); //		_vect); //OR(26)
-EMPTY_INTERRUPT(USART0_TX_vect); //			_vect); //OR(27)
-EMPTY_INTERRUPT(ANALOG_COMP_vect); //		_vect); //OR(28)
-EMPTY_INTERRUPT(ADC_vect); //			_vect); //OR(29)
-EMPTY_INTERRUPT(EE_READY_vect); //			_vect); //OR(30)
-EMPTY_INTERRUPT(TIMER3_CAPT_vect); //		_vect); //OR(31)
-EMPTY_INTERRUPT(TIMER3_COMPA_vect); //		_vect); //OR(32)
-EMPTY_INTERRUPT(TIMER3_COMPB_vect); //		_vect); //OR(33)
-EMPTY_INTERRUPT(TIMER3_COMPC_vect); //		_vect); //OR(34)
-EMPTY_INTERRUPT(TIMER3_OVF_vect); //			_vect); //OR(35)
-EMPTY_INTERRUPT(USART1_RX_vect); //			_vect); //OR(36)
-EMPTY_INTERRUPT(USART1_UDRE_vect); //		_vect); //OR(37)
-EMPTY_INTERRUPT(USART1_TX_vect); //			_vect); //OR(38)
-EMPTY_INTERRUPT(TWI_vect); //			_vect); //OR(39)
-EMPTY_INTERRUPT(SPM_READY_vect); //			_vect); //OR(40)
-EMPTY_INTERRUPT(TIMER4_COMPA_vect); //		_vect); //OR(42)
-EMPTY_INTERRUPT(TIMER4_COMPB_vect); //		_vect); //OR(43)
-EMPTY_INTERRUPT(TIMER4_COMPC_vect); //		_vect); //OR(44)
-EMPTY_INTERRUPT(TIMER4_OVF_vect); //			_vect); //OR(45)
-EMPTY_INTERRUPT(_VECTOR(41));
-EMPTY_INTERRUPT(TIMER5_COMPA_vect); //		_vect); //OR(47)
-EMPTY_INTERRUPT(TIMER5_COMPB_vect); //		_vect); //OR(48)
-EMPTY_INTERRUPT(TIMER5_COMPC_vect); //		_vect); //OR(49)
-EMPTY_INTERRUPT(TIMER5_OVF_vect); //			_vect); //OR(50)
-EMPTY_INTERRUPT(_VECTOR(46));
-*/

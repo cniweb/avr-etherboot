@@ -29,7 +29,6 @@
 #include "arp.h"
 #include "ethernet.h"
 #include "ip.h"
-#include "timer1.h"
 
 struct ARP_TABLE ARPtable[ MAX_ARPTABLE_ENTRYS ];
 struct ARP_TABLE *ARP_table;
@@ -63,7 +62,7 @@ void arp (unsigned int packet_length, unsigned char *ethernetbuffer)
 			ETH_packet->ETH_sourceMac[i] = maMac[i];
 		}
 		
-		sendEthernetframe (packet_length, ethernetbuffer);
+		enc28j60PacketSend (packet_length, ethernetbuffer);
 
 		break;
 

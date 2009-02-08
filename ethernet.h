@@ -8,6 +8,8 @@
 
 #ifndef __ETHERNET_H__
 
+#include "enc28j60.h"
+
 extern unsigned char ethernetbuffer[];
 extern unsigned char ethernetbuffer_send[];
 extern unsigned char UDPRxBuffer[];
@@ -26,14 +28,7 @@ extern unsigned char UDPRxBuffer[];
 void ethernet(void);
 extern unsigned char maMac[6];
 
-void ethernetloop (void);
-unsigned int getEthernetframe (unsigned int maxlen, unsigned char *buffer);
 void MakeETHheader (unsigned char * MACadress , unsigned char * buffer );
-void sendEthernetframe (unsigned int packet_length, unsigned char *buffer);
-void EthernetInit (unsigned char mode );
-void LockEthernet (void);
-void FreeEthernet (void);
-void alive (void);
 
 #define ETHERNET_MIN_PACKET_LENGTH	0x3C
 #define ETHERNET_HEADER_LENGTH	0x0E
