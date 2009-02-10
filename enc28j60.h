@@ -240,9 +240,9 @@
 
 // buffer boundaries applied to internal 8K ram
 // entire available packet buffer space is allocated
-#define TXSTART_INIT   	0x1800	// start TX buffer at 0
-#define RXSTART_INIT   	0x0000	// give TX buffer space for one full ethernet frame (~1500 bytes)
-#define RXSTOP_INIT    	0x17FE	// receive buffer gets the rest
+#define TXSTART_INIT   	0x1800	// give TX buffer space for one full ethernet frame (~1500 bytes)
+#define RXSTART_INIT   	0x0000	// start RX buffer at 0x0000
+#define RXSTOP_INIT    	0x17FE	// transmit buffer gets the rest
 
 //#define TXSTART_INIT   	MAX_FRAMELEN	// start TX buffer at 0
 //#define RXSTART_INIT   	MAX_FRAMELEN+1	// give TX buffer space for one full ethernet frame (~1500 bytes)
