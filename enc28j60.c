@@ -225,15 +225,7 @@ void enc28j60PhyWrite(unsigned char address, unsigned int data)
 void enc28j60Init(void)
 {
 	// initialize I/O
-	SPI_init ();
-
-	/// Hardware-Reset
-	DDRB |= (1<<PB1);
-	PORTB &= ~(1<<PB1);
-	uint8_t i;
-	for (i=0;i<40;i++)
-		_delay_ms(35);
-	PORTB |= (1<<PB1);
+	SPI_init ();	
 
 	ENC28J60_CONTROL_DDR |= (1<<ENC28J60_CONTROL_CS);
 	ENC28J60_CONTROL_PORT |= (1<<ENC28J60_CONTROL_CS);
@@ -242,10 +234,10 @@ void enc28j60Init(void)
 	enc28j60WriteOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
 
   	// check CLKRDY bit to see if reset is complete
-	
 	// while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));
-        // Errata workaround #1, ESTAT.CLKRDY is not working
-        // workaround by waiting  1ms
+    
+	// ENC28J60 Rev. B7 Silicon Errata workaround #1, ESTAT.CLKRDY is not working
+    // workaround by waiting  1ms
 	_delay_ms(1);
 
 	// do bank 0 stuff
@@ -308,7 +300,7 @@ void enc28j60Init(void)
 void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 {
 
-	// Errata Issue #12
+	// ENC28J60 Rev. B7 Silicon Errata workaround #10, ESTAT.CLKRDY is not working
 	// Reset transmit logic
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
@@ -364,7 +356,8 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 	// check if a packet has been received and buffered
 	if( !(enc28j60Read(EIR) & EIR_PKTIF) )
 	{
-        // Errata workaround #6, PKTIF is not reliable
+	
+		// ENC28J60 Rev. B7 Silicon Errata workaround #4, PKTIF is not reliable
         // double check by looking at EPKTCNT
 		if (enc28j60Read(EPKTCNT) == 0)
 		{
@@ -397,8 +390,9 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 		// copy the packet from the receive buffer
 		enc28j60ReadBuffer(len, packet);
 	}
-
-	// an implementation of Errata workaround #11
+	
+	// ENC28J60 Rev. B7 Silicon Errata workaround #11, receive buffer ma get corrupted
+	// when ERXRDPTH:ERXRDPTL contains an even address
     rs = enc28j60Read(ERXSTH);
     rs <<= 8;
     rs |= enc28j60Read(ERXSTL);
