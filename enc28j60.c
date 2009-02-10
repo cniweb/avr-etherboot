@@ -300,11 +300,15 @@ void enc28j60Init(void)
 void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 {
 
-	// ENC28J60 Rev. B7 Silicon Errata workaround #10, ESTAT.CLKRDY is not working
-	// Reset transmit logic
-	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
-	enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
-
+	// ENC28J60 Rev. B7 Silicon Errata workaround #10, transmit logic may stall
+	// workaround: Reset transmit logic when TXERIF is set
+	if (enc28j60Read(EIR) & EIR_TXERIF)
+	{
+		enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
+		enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
+		enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, EIR, EIR_TXERIF);
+	}	
+	
 	// Set the write pointer to start of transmit buffer area
 	enc28j60Write(EWRPTL, (uint8_t)TXSTART_INIT);
 	enc28j60Write(EWRPTH, TXSTART_INIT>>8);
@@ -329,6 +333,8 @@ void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 // Hole ein empfangenes Packet
 //
 //*********************************************************************************************************
+
+/*
 unsigned int enc28j60PacketReceiveLenght( void )
 	{
 	unsigned int len;
@@ -342,6 +348,7 @@ unsigned int enc28j60PacketReceiveLenght( void )
 	
 	return( len );
 	}
+*/
 
 //*********************************************************************************************************
 //
