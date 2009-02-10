@@ -243,8 +243,11 @@ void enc28j60Init(void)
 
   	// check CLKRDY bit to see if reset is complete
 	
-	while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));
-	
+	// while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));
+        // Errata workaround #1, ESTAT.CLKRDY is not working
+        // workaround by waiting  1ms
+	_delay_ms(1);
+
 	// do bank 0 stuff
 	// initialize receive buffer
 	// 16-bit transfers, must write low byte first
@@ -304,6 +307,12 @@ void enc28j60Init(void)
 //*********************************************************************************************************
 void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 {
+
+	// Errata Issue #12
+	// Reset transmit logic
+	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRST);
+	enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, ECON1, ECON1_TXRST);
+
 	// Set the write pointer to start of transmit buffer area
 	enc28j60Write(EWRPTL, (uint8_t)TXSTART_INIT);
 	enc28j60Write(EWRPTH, TXSTART_INIT>>8);
@@ -311,13 +320,13 @@ void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 	// Set the TXND pointer to correspond to the packet size given
 	enc28j60Write(ETXNDL, (TXSTART_INIT+len));
 	enc28j60Write(ETXNDH, (TXSTART_INIT+len)>>8);
-
+ 	 
 	// write per-packet control byte
 	enc28j60WriteOp(ENC28J60_WRITE_BUF_MEM, 0, 0x00);
 
 	// copy the packet into the transmit buffer
 	enc28j60WriteBuffer(len, packet);
-
+	
 	// send the contents of the transmit buffer onto the network
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
 
@@ -354,16 +363,19 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 
 	// check if a packet has been received and buffered
 	if( !(enc28j60Read(EIR) & EIR_PKTIF) )
+	{
+        // Errata workaround #6, PKTIF is not reliable
+        // double check by looking at EPKTCNT
 		if (enc28j60Read(EPKTCNT) == 0)
+		{
 			return 0;
-
-	// Make absolutely certain that any previous packet was discarded	
-	//if( WasDiscarded == FALSE)
-	//	MACDiscardRx();
+		}
+	}
 
 	// Set the read pointer to the start of the received packet
 	enc28j60Write(ERDPTL, (NextPacketPtr));
 	enc28j60Write(ERDPTH, (NextPacketPtr)>>8);
+	 	
 	
 	// read the next packet pointer
 	NextPacketPtr  = enc28j60ReadOp(ENC28J60_READ_BUF_MEM, 0);
@@ -378,19 +390,15 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 	rxstat |= enc28j60ReadOp(ENC28J60_READ_BUF_MEM, 0)<<8;
 	
 	// limit retrieve length
-	// len = MIN(len, maxlen);
 	// When len bigger than maxlen, ignore the packet und read next packetptr
-	if ( len > maxlen ) 
+	if (len <= maxlen)
 	{
-		enc28j60Write(ERXRDPTL, (NextPacketPtr));
-		enc28j60Write(ERXRDPTH, (NextPacketPtr)>>8);
-		enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
-		return(0);
+		// buffer is big enough
+		// copy the packet from the receive buffer
+		enc28j60ReadBuffer(len, packet);
 	}
-	// copy the packet from the receive buffer
-	enc28j60ReadBuffer(len, packet);
 
-	// an implementation of Errata B1 Section #13
+	// an implementation of Errata workaround #11
     rs = enc28j60Read(ERXSTH);
     rs <<= 8;
     rs |= enc28j60Read(ERXSTL);
@@ -416,5 +424,6 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 	// decrement the packet counter indicate we are done with this packet
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
 	
-	return len;
+	return (maxlen >= len ? len : 0);
+	
 }
