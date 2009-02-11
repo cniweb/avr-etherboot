@@ -174,18 +174,45 @@ void initializeHardware (void)
 	PORTD = 0;
 	// disable SPI
 	SPCR &= ~(1<<SPE);
+	
 }
+
+// Debugging
+/*
+void sendchar (unsigned char Zeichen)
+{
+	while (!(UCSRA & (1<<UDRE)));
+	UDR = Zeichen;
+}
+
+void putstring (unsigned char *string)
+{
+	while (*string)
+	{ 
+		sendchar (*string);
+		string++;
+	}
+}
+*/
 
 int main(void)
 {
 	// disable interrupts
 	cli();
 	
-	//DDRD |= (1<<PD2);
-	//DDRA |= 1+2+4+8+16;
-
 	initializeHardware();
 	
+/*
+	// Debugging über UART (Mega32)
+	//DDRD = (1<<PD1);
+	//PORTD = 0;
+	UCSRB = ( 1 << TXEN );							// UART TX einschalten
+	UCSRC |= ( 1 << URSEL )|( 3<<UCSZ0 );	        // Asynchron 8N1
+	UBRRH  = 0;                                   	// Highbyte ist 0
+	UBRRL  = 11; // 38400 Baud
+	
+	sendchar(1);
+*/	
 
 	// ENC Initialisieren //
 	ETH_INIT();
@@ -229,6 +256,7 @@ int main(void)
 		
 		if (sock.Bufferfill > 0)
 		{
+
 			// check for data packet (00 03)
 			if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
 			{ 
@@ -239,7 +267,7 @@ int main(void)
 				// copy current line till newline character or end of rx buf
 				while (1)
 				{
-					if ((rxBufferIdx+1) > sock.Bufferfill)
+					if ((rxBufferIdx - sock.DataStartOffset) >= sock.Bufferfill)
 					{
 						// rx buf processed
 						// send ack and wait for next packet

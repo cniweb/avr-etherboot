@@ -54,7 +54,7 @@
 // other boards are wired this way
 //#define ENC28J60_CONTROL_DDR	DDRD
 //#define ENC28J60_CONTROL_PORT	PORTD
-	
+
 #define ENC28J60_PIN_SCK	7
 #define ENC28J60_PIN_MISO	6
 #define ENC28J60_PIN_MOSI	5
@@ -68,7 +68,7 @@
 
 
 // -> SPI
-#define SPI_PORT	ENC28J60_CONTROL_DDR
+#define SPI_PORT	ENC28J60_CONTROL_PORT
 #define SPI_DDR		ENC28J60_CONTROL_DDR
 #define SS			ENC28J60_PIN_SS
 #define MISO		ENC28J60_PIN_MISO

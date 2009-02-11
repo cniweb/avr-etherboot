@@ -1,7 +1,7 @@
 #include "eemem.h"
 
 
-unsigned long EEMEM mlIpEEP = IP(192,168,2,132);
+unsigned long EEMEM mlIpEEP = IP(192,168,2,131);
 unsigned long EEMEM mlNetmaskEEP = IP(255,255,255,0);
 unsigned long EEMEM mlGatewayEEP = IP(192,168,2,2);
 unsigned long EEMEM mlDNSserverEEP = IP(192,168,2,2); //0x0302a8c0;
