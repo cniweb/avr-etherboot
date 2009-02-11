@@ -33,18 +33,19 @@ unsigned char EEMEM enc28j60_config[]  = {
 	MACON2, 	0x00,
 	//2.) mac rx enable, activate pause control frame support
 	MACON1, 	MACON1_MARXEN|MACON1_TXPAUS|MACON1_RXPAUS,
-	//3.) setup MACON3: auto padding of small packets, add crc, enable frame length check:
-	MACON3, 	MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN,
+	//3.) setup MACON3: full duplex, auto padding of small packets, add crc, enable frame length check:
+	// !!! must change PHCON1 in enc28j60.c for half duplex !!!
+	MACON3, 	MACON3_PADCFG0|MACON3_TXCRCEN|MACON3_FRMLNEN|MACON3_FULDPX,
 	//4.) don't set up MACON4 (use default)
 	//5.) setup maximum framelenght to 1518:
 	MAMXFLL, lo8(1518),
 	MAMXFLH, hi8(1518),
 	//6.) set up back-to-back gap: 0x15 for full duplex / 0x12 for half duplex
-	MABBIPG, 0x12, //half duplex
+	MABBIPG, 0x15, // full duplex, use 0x12 for half duplex
 	//7.) setup non-back-to-back gap: use 0x12
 	MAIPGL,  0x12,
 	//8.) setup non-back-to-back gap high byte: 0x0C for half duplex:
-	MAIPGH,  0x0C, //half duplex
+	MAIPGH,  0x00, // full duplex, use 0x0C for half duplex
 	//9.) don't change MACLCON1+2 / MACLCON2 might be changed for networks with long wires !
 
 	//setup bank3:

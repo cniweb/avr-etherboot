@@ -89,17 +89,6 @@
 				((uint32_t)NTP_SERVER_IP_ADDRESS_3))
 */
 
-#ifndef sbi
-	#define sbi(reg,bit)    reg |= (1<<(bit))
-#endif
-
-#ifndef cbi
-	#define cbi(reg,bit)    reg &= ~(1<<(bit))
-#endif
-#ifndef MIN
-	#define MIN(a,b)        ((a<b)?(a):(b))
-#endif
-
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
 
