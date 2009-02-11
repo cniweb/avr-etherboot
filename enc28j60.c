@@ -287,6 +287,9 @@ void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 	// copy the packet into the transmit buffer
 	enc28j60WriteBuffer(len, packet);
 	
+	// clear transmit interrupt flag
+	enc28j60WriteOp(ENC28J60_BIT_FIELD_CLR, EIR, EIR_TXIF);
+		
 	// send the contents of the transmit buffer onto the network
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON1, ECON1_TXRTS);
 
@@ -321,7 +324,7 @@ unsigned int enc28j60PacketReceiveLenght( void )
 //*********************************************************************************************************
 unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 {
-	unsigned int rxstat, rs,re;;
+	unsigned int rxstat;	//, rs,re;
 	unsigned int len;
 
 	// check if a packet has been received and buffered
@@ -361,8 +364,11 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 		enc28j60ReadBuffer(len, packet);
 	}
 	
+	// Move the RX read pointer to the start of the next received packet
+	// This frees the memory we just read out
 	// ENC28J60 Rev. B7 Silicon Errata workaround #11, receive buffer may get corrupted
 	// when ERXRDPTH:ERXRDPTL contains an even address
+/* no need to read the stuff from the chip, we never change these values while running
     rs = enc28j60Read(ERXSTH);
     rs <<= 8;
     rs |= enc28j60Read(ERXSTL);
@@ -370,20 +376,18 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
     re <<= 8;
     re |= enc28j60Read(ERXNDL);
     if (NextPacketPtr - 1 < rs || NextPacketPtr - 1 > re)
-    {
-        enc28j60Write(ERXRDPTL, (re));
-        enc28j60Write(ERXRDPTH, (re)>>8);
+*/
+	// use defined values instead
+	if (((NextPacketPtr - 1) < ENC28J60_RX_BUFFER_START) || ((NextPacketPtr - 1) > ENC28J60_RX_BUFFER_END))
+	{
+        enc28j60Write(ERXRDPTL, lo8(ENC28J60_RX_BUFFER_END));
+        enc28j60Write(ERXRDPTH, hi8(ENC28J60_RX_BUFFER_END));
     }
     else
     {
         enc28j60Write(ERXRDPTL, (NextPacketPtr-1));
         enc28j60Write(ERXRDPTH, (NextPacketPtr-1)>>8);
     }
-
-/*	// Move the RX read pointer to the start of the next received packet
-	// This frees the memory we just read out
-	enc28j60Write(ERXRDPTL, (NextPacketPtr));
-	enc28j60Write(ERXRDPTH, (NextPacketPtr)>>8); */
 	
 	// decrement the packet counter indicate we are done with this packet
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
