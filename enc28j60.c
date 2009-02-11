@@ -236,6 +236,9 @@ void enc28j60Init(void)
 		enc28j60Write(eeprom_read_byte(&enc28j60_config[i+0]),eeprom_read_byte(&enc28j60_config[i+1]));
 	}
 
+	// enable full duplex (see also MACON3 in eeprom)
+	enc28j60PhyWrite(PHCON1, PHCON1_PDPXMD);
+
 	// no loopback of transmitted frames
 	enc28j60PhyWrite(PHCON2, PHCON2_HDLDIS);
 
@@ -326,13 +329,14 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 {
 	unsigned int rxstat;	//, rs,re;
 	unsigned int len;
+	uint8_t nPktCnt = enc28j60Read(EPKTCNT);
 
 	// check if a packet has been received and buffered
 	if( !(enc28j60Read(EIR) & EIR_PKTIF) )
 	{
 		// ENC28J60 Rev. B7 Silicon Errata workaround #4, PKTIF is not reliable
         // double check by looking at EPKTCNT
-		if (enc28j60Read(EPKTCNT) == 0)
+		if (nPktCnt == 0)
 		{
 			return 0;
 		}
@@ -392,7 +396,20 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 	// decrement the packet counter indicate we are done with this packet
 	enc28j60WriteOp(ENC28J60_BIT_FIELD_SET, ECON2, ECON2_PKTDEC);
 	
-	return (maxlen >= len ? len : 0);
+	// remove this part in half duplex mode!
+	if (nPktCnt > 2)
+	{	// at least two more packets are waiting, we need to slow down the sender
+		enc28j60Write(EFLOCON, 0x02);	// Send pause frames periodically
+	}
+	else if (nPktCnt == 1)
+	{	// buffer is empty now
+		if (enc28j60Read(EFLOCON) & 0x03)
+		{	// FCEN1 or FCEN0 is set, tell sender to continue now
+			enc28j60Write(EFLOCON, 0x03);	// Send one pause frame with a 0 timer value and then turn flow control off
+		}
+	}
+
+	return (maxlen > len ? len : 0);
 	
 }
 #endif
