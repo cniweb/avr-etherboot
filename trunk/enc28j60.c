@@ -409,7 +409,7 @@ unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet)
 		}
 	}
 
-	return (maxlen > len ? len : 0);
+	return (maxlen >= len ? len : 0);
 	
 }
 #endif
