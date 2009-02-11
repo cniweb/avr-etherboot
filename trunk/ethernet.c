@@ -18,7 +18,7 @@
 
 #include <stdio.h>
 
-unsigned char maMac[6];
+unsigned char maMac[6] = {MYMAC1, MYMAC2, MYMAC3, MYMAC4, MYMAC5, MYMAC6};
 
 
 /*
@@ -26,9 +26,9 @@ unsigned char maMac[6];
    Die Routine die die pakete nacheinander abarbeitet
 ------------------------------------------------------------------------------------------------------------*/
 
-unsigned char ethernetbuffer[MAX_FRAMELEN];
+unsigned char ethernetbuffer[MTU_SIZE];
 unsigned char ethernetbuffer_send[100];
-unsigned char UDPRxBuffer[516];
+//unsigned char UDPRxBuffer[516];
 
 inline void ethernet(void)
 {
@@ -36,7 +36,7 @@ inline void ethernet(void)
 	unsigned int packet_length;
 
 	// hole ein Frame
-	packet_length = enc28j60PacketReceive (MAX_FRAMELEN, ethernetbuffer);
+	packet_length = ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer);
 
 	// wenn Frame vorhanden packet_lenght != 0
 	// arbeite so lange die Frames ab bis keine mehr da sind

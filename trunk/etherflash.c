@@ -23,16 +23,16 @@
  */
 //@{
 
-#include "config.h"
 #include <avr/io.h>
 #include <avr/wdt.h>
-#include <avr/pgmspace.h>
+//#include <avr/pgmspace.h>
 #include <stdlib.h>
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/boot.h>
-#include <avr/interrupt.h>
 
+
+#include "config.h"
 #include "eemem.h"
 #include "ethernet.h"
 #include "network.h"
@@ -187,13 +187,11 @@ int main(void)
 	initializeHardware();
 	
 
-	// Mac-Addresse aus EEPROM lesen
-	eeprom_read_block (&maMac, (const void*)&maMacEEP, 6);
 	// ENC Initialisieren //
-	enc28j60Init();
+	ETH_INIT();
 
 	// Alle Packet lesen und in leere laufen lassen damit ein definierter zustand herrscht
-	while (enc28j60PacketReceive (MAX_FRAMELEN, ethernetbuffer) != 0 ) {};
+	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
 	ip_init ();
 
@@ -232,12 +230,12 @@ int main(void)
 		if (sock.Bufferfill > 0)
 		{
 			// check for data packet (00 03)
-			if (UDPRxBuffer[1] == 0x03)
+			if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
 			{ 
 												
 				// this is a data packet
 									
-				rxBufferIdx = 4;
+				rxBufferIdx = sock.DataStartOffset+4;
 				// copy current line till newline character or end of rx buf
 				while (1)
 				{
@@ -245,8 +243,8 @@ int main(void)
 					{
 						// rx buf processed
 						// send ack and wait for next packet
-						macUDPBufferTFTP_send[2]  = UDPRxBuffer[2];
-						macUDPBufferTFTP_send[3]  = UDPRxBuffer[3];
+						macUDPBufferTFTP_send[2]  = ethernetbuffer[sock.DataStartOffset+2];
+						macUDPBufferTFTP_send[3]  = ethernetbuffer[sock.DataStartOffset+3];
 
 						// last packet is shorter than 516 bytes
 						lastPacket = (sock.Bufferfill < 516);
@@ -259,8 +257,8 @@ int main(void)
 					else
 					{
 						// copy next byte from rx buf to line buf
-						lineBuffer[lineBufferIdx++] = UDPRxBuffer[rxBufferIdx++];
-						if (UDPRxBuffer[rxBufferIdx-1] == 0x0A)
+						lineBuffer[lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
+						if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
 						{
 							// newline
 							processLineBuffer(lineBufferIdx);
@@ -277,7 +275,7 @@ int main(void)
 				
 
 			}
-			else if (UDPRxBuffer[1] == 5)
+			else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
 			{
 				// error -> reboot to application
 				jumpToApplication();

@@ -27,7 +27,7 @@
 	#define _UDP_H
 
     extern struct UDP_SOCKET sock;
-	extern unsigned char UDPRxBuffer[];
+//	extern unsigned char UDPRxBuffer[];
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*! Hier findet die Bearbeitung des Packetes statt welches ein UDP-Packet enthaelt. Es wir versucht die
@@ -138,6 +138,7 @@
 		volatile unsigned char MACadress[6];
 		volatile unsigned int Bufferlenght;
 		volatile unsigned int Bufferfill;
+		volatile unsigned int DataStartOffset;
 	};
 	
 
