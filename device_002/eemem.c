@@ -5,8 +5,7 @@ unsigned long EEMEM mlIpEEP = IP(192,168,2,132);
 unsigned long EEMEM mlNetmaskEEP = IP(255,255,255,0);
 unsigned long EEMEM mlGatewayEEP = IP(192,168,2,2);
 unsigned long EEMEM mlDNSserverEEP = IP(192,168,2,2); //0x0302a8c0;
-//uint8_t EEMEM miDeviceID = 001;
-unsigned char EEMEM maTFTPReqStr[12] = {0x00, 0x01, '0', '0', '2', 0x00, 'o', 'c', 't', 'e', 't', 0x00};
+unsigned char EEMEM maTFTPReqStr[12] = {0x00, 0x01, '0', '1', '0', 0x00, 'o', 'c', 't', 'e', 't', 0x00};
 
 #if USE_ENC28J60	
 #include "enc28j60.h"

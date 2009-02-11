@@ -8,7 +8,7 @@
 #define	MYMAC3 0x02
 #define	MYMAC4 0x03
 #define	MYMAC5 0x04
-#define	MYMAC6 0x22
+#define	MYMAC6 0x21
 
 #if defined (__AVR_ATmega32__)
 	#define MTU_SIZE 600
@@ -24,23 +24,6 @@
 
 /////////////////////////////// PIN SETUP ////////////////////////////////////////////
 
-/*
-// ATMEGA2561
-
-//-> enc28j60
-#define ENC28J60_CONTROL_PORT	PORTG
-#define ENC28J60_CONTROL_DDR	DDRG
-#define ENC28J60_CONTROL_CS	3
-#define ENC28J60_INT_PORTBIT    6
-
-// -> SPI
-#define SPI_PORT		PORTB
-#define SPI_DDR			DDRB
-#define SS				PB0
-#define MISO			PB3
-#define MOSI			PB2
-#define SCK				PB1
-*/
 
 // ATMEGA32
 //-> enc28j60
@@ -48,28 +31,27 @@
 
 // set these so that it reflects your hardware
 // Net-IO board from Pollin
-#define ENC28J60_CONTROL_DDR	DDRB
-#define ENC28J60_CONTROL_PORT	PORTB
-// other boards are wired this way
-//#define ENC28J60_CONTROL_DDR	DDRD
-//#define ENC28J60_CONTROL_PORT	PORTD
-	
+// #define ENC28J60_CONTROL_DDR	DDRB
+// #define ENC28J60_CONTROL_PORT	PORTB
+
+// Board Jan
+#define ENC28J60_CONTROL_DDR	DDRD
+#define ENC28J60_CONTROL_PORT	PORTD
+		
 #define ENC28J60_PIN_SCK	7
 #define ENC28J60_PIN_MISO	6
 #define ENC28J60_PIN_MOSI	5
 
 // Net-IO board from Pollin
-#define ENC28J60_PIN_SS		3
+//#define ENC28J60_PIN_CS		4
+
+// Board Jan
 #define ENC28J60_PIN_CS		4
-// other boards are wired this way
-//#define ENC28J60_PIN_SS		4
-//#define ENC28J60_PIN_CS		3
 
 
 // -> SPI
-#define SPI_PORT	ENC28J60_CONTROL_DDR
-#define SPI_DDR		ENC28J60_CONTROL_DDR
-#define SS			ENC28J60_PIN_SS
+#define SPI_PORT	PORTB
+#define SPI_DDR		DDRB
 #define MISO		ENC28J60_PIN_MISO
 #define MOSI		ENC28J60_PIN_MOSI
 #define SCK			ENC28J60_PIN_SCK
