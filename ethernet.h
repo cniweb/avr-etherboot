@@ -12,7 +12,7 @@
 
 extern unsigned char ethernetbuffer[];
 extern unsigned char ethernetbuffer_send[];
-extern unsigned char UDPRxBuffer[];
+//extern unsigned char UDPRxBuffer[];
 
 /* debugging jan
 #define LEDON PORTD  |= (1<<(PD2))

@@ -240,29 +240,22 @@
 
 // buffer boundaries applied to internal 8K ram
 // entire available packet buffer space is allocated
-#define TXSTART_INIT   	0x1800	// give TX buffer space for one full ethernet frame (~1500 bytes)
-#define RXSTART_INIT   	0x0000	// start RX buffer at 0x0000
-#define RXSTOP_INIT    	0x17FE	// transmit buffer gets the rest
+#define ENC28J60_RX_BUFFER_START ((unsigned int)0x0000)
+#define ENC28J60_RX_BUFFER_END   ((unsigned int)0x19FF)
+#define ENC28J60_TX_BUFFER_START ((unsigned int)0x1A00)
+#define ENC28J60_TX_BUFFER_LEN   ((unsigned int)0x0600)
+#define ENC28J60_TX_BUFFER_END   ((unsigned int)0x1FFF)
 
-//#define TXSTART_INIT   	MAX_FRAMELEN	// start TX buffer at 0
-//#define RXSTART_INIT   	MAX_FRAMELEN+1	// give TX buffer space for one full ethernet frame (~1500 bytes)
 
-//#define	MAX_FRAMELEN	250	// maximum ethernet frame length
-#define	MAX_FRAMELEN	562	// maximum ethernet frame length
+//	#define ETH_INTERRUPT 		INT2_vect
+#define ETH_INIT			enc28j60Init
+#define ETH_PACKET_RECEIVE	enc28j60PacketReceive
+#define ETH_PACKET_SEND		enc28j60PacketSend
 
-// unsigned char buffer[MAX_FRAMELEN];
-
-// Ethernet constants
-// #define ETHERNET_MIN_PACKET_LENGTH	0x3C
-// #define ETHERNET_HEADER_LENGTH	0x0E
 
 // functions
 // setup ports for I/O
 
-extern uint8_t maMac[6];
-
-//! set a MAC-Address
-void nicSetMacAddress( void );
 //! do a ENC28J60 read operation
 unsigned char enc28j60ReadOp( unsigned char op,  unsigned char address);
 //! do a ENC28J60 write operation

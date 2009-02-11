@@ -74,15 +74,15 @@ void udp (unsigned int packet_length)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
-		unsigned int Offset, i;
-		Offset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGTH;
-		i = sock.Bufferfill;
+//		unsigned int Offset, i;
+		sock.DataStartOffset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGTH;
+//		i = sock.Bufferfill;
 		
 		// Daten kopieren
-		while (i--)
-		{
-			UDPRxBuffer[i] = ethernetbuffer[Offset + i];
-		}
+//		while (i--)
+//		{
+//			UDPRxBuffer[i] = ethernetbuffer[Offset + i];
+//		}
 
 		
 	}
@@ -168,7 +168,7 @@ void UDP_SendPacket (unsigned int datalength)
 	MakeETHheader ((unsigned char *)sock.MACadress, ethernetbuffer_send);
 
 	// sendEthernetframe
-	enc28j60PacketSend(ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
+	ETH_PACKET_SEND(ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
 						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer_send);
 
 }
