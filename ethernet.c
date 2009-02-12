@@ -6,27 +6,39 @@
  *  Email
  ****************************************************************************/
 #include <avr/interrupt.h>
-#include <avr/pgmspace.h>
 #include <stdio.h>
 #include "ethernet.h"
 #include "arp.h"
 #include "enc28j60.h"
-#include "ip.h"
 #include "udp.h"
 #include "config.h"
 #include "eemem.h"
 
-#include <stdio.h>
 
+unsigned long mlIP;
+unsigned long mlNetmask;
+unsigned long mlGateway;
+unsigned long mlDNSserver;
+unsigned char ethernetbuffer[MTU_SIZE];
+
+void stack_init (void)
+{
+
+	// Adressen aus dem EEPROM lesen
+	eeprom_read_block ((void*)&mlIP, (const void*)&mlIpEEP, 4);
+	eeprom_read_block ((void*)&mlNetmask, (const void*)&mlNetmaskEEP, 4);
+	eeprom_read_block ((void*)&mlGateway, (const void*)&mlGatewayEEP, 4);
+	eeprom_read_block ((void*)&mlDNSserver, (const void*)&mlDNSserverEEP, 4);
+
+}
 
 /*
  -----------------------------------------------------------------------------------------------------------
    Die Routine die die pakete nacheinander abarbeitet
 ------------------------------------------------------------------------------------------------------------*/
 
-unsigned char ethernetbuffer[MTU_SIZE];
 
-inline void ethernet(void)
+inline void eth_packet_dispatcher(void)
 {
 
 	unsigned int packet_length;
@@ -48,7 +60,7 @@ inline void ethernet(void)
 				break;
 
 			case 0x0008:
-				if (((struct IP_header *)&ethernetbuffer[ETHERNET_HEADER_LENGTH])->IP_Protocol == 0x11)
+				if (((struct IP_Header *)&ethernetbuffer[ETH_HDR_LEN])->IP_Proto == 0x11)
 				{
 					udp (packet_length);
 				}

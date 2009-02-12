@@ -109,8 +109,6 @@
 	unsigned int UDP_GetSocket (unsigned char * ethernetbuffer);
 	void MakeUDPheader  (unsigned int Datalength, unsigned char * ethernetbuffer);
 
-	#define UDP_HEADER_LENGTH 8
-		
 	#define SOCKET_NOT_USE		0x00			// SOCKET ist Frei
 	#define SOCKET_READY		0x10			// Socket ist Bereit zur Benutzung
 	#define UDP_SOCKET_BUSY			0x20			// SOCKET belegt ...

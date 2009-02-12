@@ -22,15 +22,15 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 //@{
-#include <avr/pgmspace.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "arp.h"
 #include "ethernet.h"
-#include "ip.h"
 #include "config.h"
 #include "eemem.h"
+#include "enc28j60.h"
+
 
 struct ARP_TABLE ARPtable[ MAX_ARPTABLE_ENTRYS ];
 struct ARP_TABLE *ARP_table;
@@ -42,7 +42,7 @@ void arp (unsigned int packet_length)
 	struct ETH_header *ETH_packet;
 	ETH_packet = (struct ETH_header *) ethernetbuffer; 
 	struct ARP_header *ARP_packet;
-	ARP_packet = (struct ARP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH];
+	ARP_packet = (struct ARP_header *) &ethernetbuffer[ETH_HDR_LEN];
 	switch ( ARP_packet->ARP_Opcode ) {
 		
 	case 0x0100:
@@ -70,7 +70,7 @@ void arp (unsigned int packet_length)
 			ETH_packet->ETH_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]);
 		}
 		
-		enc28j60PacketSend (packet_length, ethernetbuffer);
+		ETH_PACKET_SEND (packet_length, ethernetbuffer);
 
 		break;
 

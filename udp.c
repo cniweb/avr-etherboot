@@ -34,10 +34,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h>
-#include "math.h"
+// #include "math.h"
 #include "arp.h"
 #include "ethernet.h"
-#include "ip.h"
 #include "udp.h"
 #include "enc28j60.h"
 #include "checksum.h"
@@ -59,22 +58,22 @@ void udp (unsigned int packet_length)
 	
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
-	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH];
+	struct IP_Header * IP_packet;		// IP_struct anlegen
+	IP_packet = ( struct IP_Header *) &ethernetbuffer[ETH_HDR_LEN];
 	struct UDP_header * UDP_packet;		// TCP_struct anlegen
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
 	if (sock.SourcePort == UDP_packet->UDP_DestinationPort && sock.Bufferfill == 0)
 	{
 
 		// Größe der Daten eintragen
-		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HEADER_LENGTH;
+		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
 
 		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
-		sock.DataStartOffset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGTH;
+		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
 		
 	}
 }
@@ -97,7 +96,6 @@ void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort)
 
 	sock.DestinationIP = IP;
 	sock.Bufferfill = 0;
-
 	if ( IP == 0xffffffff )
 	{
 		for( i = 0 ; i < 6 ; i++ ) sock.MACadress[i] = 0xff;
@@ -128,26 +126,26 @@ void UDP_SendPacket (unsigned int datalength)
 
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
-	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH];
+	struct IP_Header * IP_packet;		// IP_struct anlegen
+	IP_packet = ( struct IP_Header *) &ethernetbuffer[ETH_HDR_LEN];
 	IP_packet->IP_Version_Headerlen = 0x45; // Standard IPv4 und Headerlenghth 20byte
 	struct UDP_header * UDP_packet;		// UDP_struct anlegen
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
  
         // MakeIPHeader
 	IP_packet->IP_Version_Headerlen = 0x45;
-	IP_packet->IP_TOS = 0x0;
-	IP_packet->IP_Totallenght = htons( IP_HEADER_LENGHT + UDP_HEADER_LENGTH + datalength );
-	IP_packet->IP_Identification = 0x1DAC;
+	IP_packet->IP_Tos = 0x0;
+	IP_packet->IP_Totallenght = htons( IP_HDR_LEN + UDP_HDR_LEN + datalength );
+	IP_packet->IP_Id = 0x1DAC;
 	IP_packet->IP_Flags = 0x40;
-	IP_packet->IP_Fragmentoffset = 0x0;
-	IP_packet->IP_TTL = 64 ;
-	IP_packet->IP_Protocol = PROTO_UDP;
-	IP_packet->IP_Headerchecksum = 0x0;
-	IP_packet->IP_SourceIP = mlIP;
-	IP_packet->IP_DestinationIP = sock.DestinationIP;
-	IP_packet->IP_Headerchecksum = Checksum_16( &ethernetbuffer[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
+	IP_packet->IP_Frag_Offset = 0x0;
+	IP_packet->IP_ttl = 64 ;
+	IP_packet->IP_Proto = PROT_UDP;
+//	IP_packet->IP_Hdr_Cksum = 0x0;
+	IP_packet->IP_Srcaddr = mlIP;
+	IP_packet->IP_Destaddr = sock.DestinationIP;
+	IP_packet->IP_Hdr_Cksum = Checksum_16( &ethernetbuffer[ETH_HDR_LEN] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
 
 	// MakeUDPheader
 	UDP_packet->UDP_DestinationPort = sock.DestinationPort;
@@ -158,9 +156,7 @@ void UDP_SendPacket (unsigned int datalength)
 	MakeETHheader ((unsigned char *)sock.MACadress);
 
 	// sendEthernetframe
-	ETH_PACKET_SEND(ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
-						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer);
-
+	ETH_PACKET_SEND(ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN + datalength, ethernetbuffer);
 }
 
 
