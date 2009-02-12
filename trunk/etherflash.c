@@ -48,7 +48,6 @@ uint8_t *macUDPBufferTFTP_send;
 //uint16_t i;
 
 uint8_t lineBuffer[46];
-uint32_t currentAddress;
 uint32_t baseAddress;
 uint16_t bytesInBootPage;
 
@@ -75,7 +74,7 @@ inline uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 }
 
 // interrupts have to be disabled when calling this function!
-void writeFLASHPage(void)
+void writeFLASHPage(uint32_t currentAddress)
 {
 
     eeprom_busy_wait ();
@@ -101,6 +100,7 @@ void processLineBuffer(uint8_t bytes)
 	}
 			
 	uint8_t len;
+	uint32_t currentAddress = 0;
 	
 	switch (lineBuffer[3])
 	{
@@ -116,7 +116,7 @@ void processLineBuffer(uint8_t bytes)
 				if (bytesInBootPage == SPM_PAGESIZE)
 				{
 					// page is full -> write it				
-					writeFLASHPage();
+					writeFLASHPage(currentAddress);
 				}
 			}
 			break;
@@ -125,7 +125,7 @@ void processLineBuffer(uint8_t bytes)
             // write (incomplete page) if there are bytes in
             if (bytesInBootPage > 0)
             {
-                writeFLASHPage();
+                writeFLASHPage(currentAddress);
             }
 			break;
 			
@@ -133,9 +133,9 @@ void processLineBuffer(uint8_t bytes)
             // if bytes are in the page buffer, first write the buffer
             if (bytesInBootPage > 0)
             {
-                writeFLASHPage();        
+                writeFLASHPage(currentAddress);        
             }
-			baseAddress = ((lineBuffer[4] << 8) + lineBuffer[5]) << 4;
+			baseAddress = (uint32_t)((lineBuffer[4] << 8) + lineBuffer[5]) << 4;
 			break;
 			
 		case 0x03: // start segment address record
@@ -150,7 +150,7 @@ void processLineBuffer(uint8_t bytes)
             // if bytes are in the page buffer, first write the buffer
             if (bytesInBootPage > 0)
             {
-                writeFLASHPage();        
+                writeFLASHPage(currentAddress);        
             }
 			baseAddress = (uint32_t)((lineBuffer[4] << 8) + lineBuffer[5]) << 16;
 			break;
@@ -251,7 +251,6 @@ int main(void)
 	uint8_t lastPacket;
 
 	// init global vars
-	currentAddress = 0;
 	baseAddress = 0;
 	bytesInBootPage = 0;
 
