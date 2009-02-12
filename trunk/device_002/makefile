@@ -89,7 +89,7 @@ OBJDIR = .
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../ip.c ../udp.c eemem.c
+SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c eemem.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)

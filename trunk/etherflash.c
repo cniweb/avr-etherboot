@@ -35,7 +35,6 @@
 #include "config.h"
 #include "eemem.h"
 #include "ethernet.h"
-#include "network.h"
 #include "udp.h"
 #include "etherflash.h"
 #include "enc28j60.h"
@@ -218,7 +217,7 @@ int main(void)
 {
 	
 	uint8_t *udpSendBuffer;
-	uint8_t i;
+//	uint8_t i;
 	
 	// disable interrupts
 	cli();
@@ -243,15 +242,20 @@ int main(void)
 	// Clear receive buffer of ENC28J60
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
-	ip_init ();
+	stack_init ();
+	
+#if USE_DHCP
+	dhcp_init();
+#endif //USE_DHCP
 
-	for (i=0;i<30;i++)
-		_delay_ms(35);
+//  do we need this ????
+//	for (i=0;i<30;i++)
+//		_delay_ms(35);
 
 	
 	UDP_RegisterSocket (IP(255,255,255,255), 69);
 
-	udpSendBuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
+	udpSendBuffer = (ethernetbuffer + (ETH_HDR_LEN + 20 + UDP_HDR_LEN));
 	
 	uint8_t lineBufferIdx;
 	uint16_t rxBufferIdx;
@@ -275,7 +279,7 @@ int main(void)
 	while (1)
 	{
 
-		ethernet();
+		eth_packet_dispatcher();
 		
 		if (sock.Bufferfill > 0)
 		{

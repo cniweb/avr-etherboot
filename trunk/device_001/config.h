@@ -44,6 +44,9 @@
 */
 
 // ATMEGA32
+	
+#define USE_DHCP		0
+	
 //-> enc28j60
 #define USE_ENC28J60	1
 
