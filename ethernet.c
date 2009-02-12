@@ -18,8 +18,6 @@
 
 #include <stdio.h>
 
-unsigned char maMac[6] = {MYMAC1, MYMAC2, MYMAC3, MYMAC4, MYMAC5, MYMAC6};
-
 
 /*
  -----------------------------------------------------------------------------------------------------------
@@ -27,8 +25,6 @@ unsigned char maMac[6] = {MYMAC1, MYMAC2, MYMAC3, MYMAC4, MYMAC5, MYMAC6};
 ------------------------------------------------------------------------------------------------------------*/
 
 unsigned char ethernetbuffer[MTU_SIZE];
-unsigned char ethernetbuffer_send[100];
-//unsigned char UDPRxBuffer[516];
 
 inline void ethernet(void)
 {
@@ -48,7 +44,7 @@ inline void ethernet(void)
 		switch ( ETH_packet->ETH_typefield ) // welcher type ist gesetzt
 		{
 			case 0x0608:
-				arp (packet_length , ethernetbuffer);
+				arp (packet_length);
 				break;
 
 			case 0x0008:
@@ -67,7 +63,7 @@ inline void ethernet(void)
 /* -----------------------------------------------------------------------------------------------------------
 Erstellt den richtigen Ethernetheader zur passenden Verbindung die gerade mit TCP_socket gewählt ist
 ------------------------------------------------------------------------------------------------------------*/
-void MakeETHheader (unsigned char * MACadress , unsigned char * ethernetbuffer)
+void MakeETHheader (unsigned char * MACadress)
 {
 	struct ETH_header *ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
@@ -78,7 +74,7 @@ void MakeETHheader (unsigned char * MACadress , unsigned char * ethernetbuffer)
 	
 	for ( i = 0 ; i < 6 ; i++ )
 	{
-		ETH_packet->ETH_sourceMac[i] = maMac[i];			
+		ETH_packet->ETH_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]);
 		ETH_packet->ETH_destMac[i] = MACadress[i];
 	}
 

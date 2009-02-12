@@ -74,16 +74,7 @@ void udp (unsigned int packet_length)
 		sock.DestinationPort = UDP_packet->UDP_SourcePort;
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
-//		unsigned int Offset, i;
 		sock.DataStartOffset = ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HEADER_LENGTH;
-//		i = sock.Bufferfill;
-		
-		// Daten kopieren
-//		while (i--)
-//		{
-//			UDPRxBuffer[i] = ethernetbuffer[Offset + i];
-//		}
-
 		
 	}
 }
@@ -106,7 +97,6 @@ void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort)
 
 	sock.DestinationIP = IP;
 	sock.Bufferfill = 0;
-	//sock.Recivebuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 
 	if ( IP == 0xffffffff )
 	{
@@ -137,12 +127,12 @@ void UDP_SendPacket (unsigned int datalength)
 {
 
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
-	ETH_packet = (struct ETH_header *) ethernetbuffer_send;
+	ETH_packet = (struct ETH_header *) ethernetbuffer;
 	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer_send[ETHERNET_HEADER_LENGTH];
+	IP_packet = ( struct IP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH];
 	IP_packet->IP_Version_Headerlen = 0x45; // Standard IPv4 und Headerlenghth 20byte
 	struct UDP_header * UDP_packet;		// UDP_struct anlegen
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer_send[ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETHERNET_HEADER_LENGTH + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
  
         // MakeIPHeader
@@ -157,7 +147,7 @@ void UDP_SendPacket (unsigned int datalength)
 	IP_packet->IP_Headerchecksum = 0x0;
 	IP_packet->IP_SourceIP = mlIP;
 	IP_packet->IP_DestinationIP = sock.DestinationIP;
-	IP_packet->IP_Headerchecksum = Checksum_16( &ethernetbuffer_send[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
+	IP_packet->IP_Headerchecksum = Checksum_16( &ethernetbuffer[ETHERNET_HEADER_LENGTH] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
 
 	// MakeUDPheader
 	UDP_packet->UDP_DestinationPort = sock.DestinationPort;
@@ -165,11 +155,11 @@ void UDP_SendPacket (unsigned int datalength)
 	UDP_packet->UDP_Checksum = 0;
 	UDP_packet->UDP_Datalenght = htons(8 + datalength);
 
-	MakeETHheader ((unsigned char *)sock.MACadress, ethernetbuffer_send);
+	MakeETHheader ((unsigned char *)sock.MACadress);
 
 	// sendEthernetframe
 	ETH_PACKET_SEND(ETHERNET_HEADER_LENGTH + IP_HEADER_LENGHT
-						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer_send);
+						+ UDP_HEADER_LENGTH + datalength, ethernetbuffer);
 
 }
 

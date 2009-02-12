@@ -20,11 +20,11 @@ extern unsigned long EEMEM mlIpEEP;
 extern unsigned long EEMEM mlNetmaskEEP;
 extern unsigned long EEMEM mlGatewayEEP;
 extern unsigned long EEMEM mlDNSserverEEP;
-//extern uint8_t EEMEM miDeviceID;
 extern unsigned char EEMEM maTFTPReqStr[12];
 
 #if USE_ENC28J60	
 extern unsigned char EEMEM enc28j60_config[];
+#define ENC28J60_CONFIG_OFFSET_MAC 33
 #endif
 
 #endif

@@ -22,7 +22,7 @@
 
 	#define __ARP_H__
 
-	extern void arp (unsigned int packet_length, unsigned char *buffer);
+	extern void arp (unsigned int packet_length);
 	unsigned int GetIP2MAC (unsigned long IP, unsigned char * MACbuffer);
 
 	#define MAX_ARPTABLE_ENTRYS 1
