@@ -43,10 +43,6 @@
 #define true (1==1)
 #define false (!true)
 
-uint8_t *macUDPBufferTFTP_send;
-
-//uint16_t i;
-
 uint8_t lineBuffer[46];
 uint32_t baseAddress;
 uint16_t bytesInBootPage;
@@ -79,10 +75,10 @@ void writeFLASHPage(uint32_t currentAddress)
 
     eeprom_busy_wait ();
 
-    boot_page_erase_safe (currentAddress-2);		// Clear flash page
+    boot_page_erase (currentAddress-2);		// Clear flash page
     boot_spm_busy_wait ();      			// Wait until the memory is erased.					
 	
-    boot_page_write_safe (currentAddress-2);     // Store buffer in flash page.
+    boot_page_write (currentAddress-2);     // Store buffer in flash page.
     boot_spm_busy_wait();       			// Wait until the memory is written.
 
     bytesInBootPage = 0;
@@ -143,6 +139,7 @@ void processLineBuffer(uint8_t bytes)
 			// ignore, we know where to go after the flash
 		
 			break;
+			
 		case 0x04: // extended linear address record
 			// will never show up on smaller devices (ATmega32, ATmega644) since
 			// flash address fits in 16 bits, but in case we have a device with
@@ -178,7 +175,14 @@ void initializeHardware (void)
 	// disable TWI
 	TWCR &= ~(1<<TWIE);
 	// disable INT2
+	
+	
+#ifdef __AVR_ATmega32__
 	GICR &= ~(1<<INT2);
+#else
+	EIMSK = 0;
+#endif
+
 	DDRA = 0;
 	DDRB = 0;
 	DDRC = 0;
@@ -212,7 +216,10 @@ void putstring (unsigned char *string)
 
 int main(void)
 {
+	
+	uint8_t *udpSendBuffer;
 	uint8_t i;
+	
 	// disable interrupts
 	cli();
 	
@@ -230,10 +237,10 @@ int main(void)
 	sendchar(1);
 */	
 
-	// ENC Initialisieren //
+	// initialize ENC28J60
 	ETH_INIT();
 
-	// Alle Packet lesen und in leere laufen lassen damit ein definierter zustand herrscht
+	// Clear receive buffer of ENC28J60
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
 	ip_init ();
@@ -244,7 +251,7 @@ int main(void)
 	
 	UDP_RegisterSocket (IP(255,255,255,255), 69);
 
-	macUDPBufferTFTP_send = (ethernetbuffer_send + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
+	udpSendBuffer = (ethernetbuffer + (ETHERNET_HEADER_LENGTH + 20 + UDP_HEADER_LENGTH));
 	
 	uint8_t lineBufferIdx;
 	uint16_t rxBufferIdx;
@@ -259,15 +266,11 @@ int main(void)
 
 
 	// send RRQ
-	// Requeststring liegt im EEPROM, um FLASH zu sparen
-	eeprom_read_block ((void*)macUDPBufferTFTP_send, (const void*)&maTFTPReqStr, 12);
+	// get Requeststring from EEPROM to save FLASH
+	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, 12);
 	
 	sock.Bufferfill = 0;
 	UDP_SendPacket (12);
-
-	// prepare send buffer for TFTP ACK packets
-	macUDPBufferTFTP_send[0]  = 0x00;
-	macUDPBufferTFTP_send[1]  = 0x04; //TFTP_ACK
 
 	while (1)
 	{
@@ -291,15 +294,15 @@ int main(void)
 					{
 						// rx buf processed
 						// send ack and wait for next packet
-						macUDPBufferTFTP_send[2]  = ethernetbuffer[sock.DataStartOffset+2];
-						macUDPBufferTFTP_send[3]  = ethernetbuffer[sock.DataStartOffset+3];
+						udpSendBuffer[0]  = 0x00;
+						udpSendBuffer[1]  = 0x04; //TFTP_ACK
 
 						// last packet is shorter than 516 bytes
 						lastPacket = (sock.Bufferfill < 516);
 					
 						// mark buffer free
 						sock.Bufferfill = 0;
-						UDP_SendPacket (4);					
+						UDP_SendPacket (4);
 						break;
 					}
 					else

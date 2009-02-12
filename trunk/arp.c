@@ -29,11 +29,13 @@
 #include "arp.h"
 #include "ethernet.h"
 #include "ip.h"
+#include "config.h"
+#include "eemem.h"
 
 struct ARP_TABLE ARPtable[ MAX_ARPTABLE_ENTRYS ];
 struct ARP_TABLE *ARP_table;
 
-void arp (unsigned int packet_length, unsigned char *ethernetbuffer)
+void arp (unsigned int packet_length)
 {
 	unsigned char i;
 
@@ -50,16 +52,22 @@ void arp (unsigned int packet_length, unsigned char *ethernetbuffer)
 		}
 
 		ARP_packet->ARP_Opcode = 0x0200;
+		
 		// mac und ip des senders in ziel kopieren
-		for ( i = 0; i < 10; i++ )ARP_packet->ARP_destMac[i] = ARP_packet->ARP_sourceMac[i]; // MAC und IP umkopieren
+		for ( i = 0; i < 10; i++ )
+			ARP_packet->ARP_destMac[i] = ARP_packet->ARP_sourceMac[i]; // MAC und IP umkopieren
+		
 		// meine mac und ip als absender einsetzen
-		for ( i = 0; i < 6 ; i++ )ARP_packet->ARP_sourceMac[i] = maMac[i]; // MAC einsetzen
+		for ( i = 0; i < 6 ; i++ )
+			ARP_packet->ARP_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]); // MAC einsetzen
+		
 		ARP_packet->ARP_sourceIP = mlIP ; // IP einsetzen
+		
 		// sourceMAC in destMAC eintragen und meine MAC in sourceMAC kopieren
 		for (i = 0 ; i < 6 ; i++)
 		{	
 			ETH_packet->ETH_destMac[i] = ETH_packet->ETH_sourceMac[i];	
-			ETH_packet->ETH_sourceMac[i] = maMac[i];
+			ETH_packet->ETH_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]);
 		}
 		
 		enc28j60PacketSend (packet_length, ethernetbuffer);
@@ -69,7 +77,8 @@ void arp (unsigned int packet_length, unsigned char *ethernetbuffer)
 	case 0x0200:
 		ARP_table = &ARPtable[0];
 		ARP_table->IP = ARP_packet->ARP_sourceIP;
-		for ( i = 0 ; i < 6 ; i++ ) ARP_table->MAC[i] = ARP_packet->ARP_sourceMac[i];
+		for ( i = 0 ; i < 6 ; i++ ) 
+			ARP_table->MAC[i] = ARP_packet->ARP_sourceMac[i];
 		break;
 	}
 }
