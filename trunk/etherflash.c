@@ -45,11 +45,12 @@
 
 uint8_t *macUDPBufferTFTP_send;
 
-uint16_t i;
+//uint16_t i;
 
 uint8_t lineBuffer[46];
-uint32_t currentAddress = 0;
-uint16_t bytesInBootPage = 0;
+uint32_t currentAddress;
+uint32_t baseAddress;
+uint16_t bytesInBootPage;
 
 void initializeHardware (void);
 
@@ -105,6 +106,7 @@ void processLineBuffer(uint8_t bytes)
 	{
 		case 0x00: // data record
 			len = lineBuffer[0];
+			currentAddress = baseAddress + (lineBuffer[1] << 8) + lineBuffer[2];
 			// copy data to boot page
 			for (i=0; i<len; i+=2)
 			{
@@ -133,11 +135,24 @@ void processLineBuffer(uint8_t bytes)
             {
                 writeFLASHPage();        
             }
-			currentAddress = ((lineBuffer[4] << 8) + lineBuffer[5]) << 4;
+			baseAddress = ((lineBuffer[4] << 8) + lineBuffer[5]) << 4;
 			break;
 			
 		case 0x03: // start segment address record
+		case 0x05: // start linear address record
+			// ignore, we know where to go after the flash
 		
+			break;
+		case 0x04: // extended linear address record
+			// will never show up on smaller devices (ATmega32, ATmega644) since
+			// flash address fits in 16 bits, but in case we have a device with
+			// more than 64k flash we need to set the upper adress word here
+            // if bytes are in the page buffer, first write the buffer
+            if (bytesInBootPage > 0)
+            {
+                writeFLASHPage();        
+            }
+			baseAddress = (uint32_t)((lineBuffer[4] << 8) + lineBuffer[5]) << 16;
 			break;
 	}
 	
@@ -197,6 +212,7 @@ void putstring (unsigned char *string)
 
 int main(void)
 {
+	uint8_t i;
 	// disable interrupts
 	cli();
 	
@@ -233,6 +249,11 @@ int main(void)
 	uint8_t lineBufferIdx;
 	uint16_t rxBufferIdx;
 	uint8_t lastPacket;
+
+	// init global vars
+	currentAddress = 0;
+	baseAddress = 0;
+	bytesInBootPage = 0;
 
 	lineBufferIdx = 0;
 	lastPacket = false;
