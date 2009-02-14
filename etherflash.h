@@ -12,7 +12,7 @@
 	#define pBootloader()      asm volatile ("call 0x7000"::)
 #endif
 #if defined (__AVR_ATmega644__)
-	#define pBootloader()      asm volatile ("call 0x7000"::)
+	#define pBootloader()      asm volatile ("call 0xF000"::)
 #endif
 
 
