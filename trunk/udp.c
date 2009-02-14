@@ -123,7 +123,7 @@ void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort)
 /* -----------------------------------------------------------------------------------------------------------*/
 void UDP_SendPacket (unsigned int datalength)
 {
-
+	
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
 	struct IP_Header * IP_packet;		// IP_struct anlegen
@@ -133,7 +133,7 @@ void UDP_SendPacket (unsigned int datalength)
 	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
  
-        // MakeIPHeader
+    // MakeIPHeader
 	IP_packet->IP_Version_Headerlen = 0x45;
 	IP_packet->IP_Tos = 0x0;
 	IP_packet->IP_Totallenght = htons( IP_HDR_LEN + UDP_HDR_LEN + datalength );
@@ -142,7 +142,7 @@ void UDP_SendPacket (unsigned int datalength)
 	IP_packet->IP_Frag_Offset = 0x0;
 	IP_packet->IP_ttl = 64 ;
 	IP_packet->IP_Proto = PROT_UDP;
-//	IP_packet->IP_Hdr_Cksum = 0x0;
+	IP_packet->IP_Hdr_Cksum = 0x0;
 	IP_packet->IP_Srcaddr = mlIP;
 	IP_packet->IP_Destaddr = sock.DestinationIP;
 	IP_packet->IP_Hdr_Cksum = Checksum_16( &ethernetbuffer[ETH_HDR_LEN] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );

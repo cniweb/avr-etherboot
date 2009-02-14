@@ -45,6 +45,7 @@
 uint8_t lineBuffer[46];
 uint32_t baseAddress;
 uint16_t bytesInBootPage;
+uint32_t currentAddress;
 
 void initializeHardware (void);
 
@@ -95,7 +96,6 @@ void processLineBuffer(uint8_t bytes)
 	}
 			
 	uint8_t len;
-	uint32_t currentAddress = 0;
 	
 	switch (lineBuffer[3])
 	{
@@ -196,7 +196,7 @@ void initializeHardware (void)
 }
 
 // Debugging
-/*
+#ifdef DEBUG
 void sendchar (unsigned char Zeichen)
 {
 	while (!(UCSRA & (1<<UDRE)));
@@ -211,20 +211,20 @@ void putstring (unsigned char *string)
 		string++;
 	}
 }
-*/
+#endif
 
 int main(void)
 {
 	
 	uint8_t *udpSendBuffer;
-//	uint8_t i;
 	
 	// disable interrupts
 	cli();
 	
 	initializeHardware();
 	
-/*
+
+#ifdef DEBUG
 	// Debugging über UART (Mega32)
 	//DDRD = (1<<PD1);
 	//PORTD = 0;
@@ -234,7 +234,7 @@ int main(void)
 	UBRRL  = 11; // 38400 Baud
 	
 	sendchar(1);
-*/	
+#endif
 
 	// initialize ENC28J60
 	ETH_INIT();
@@ -248,9 +248,11 @@ int main(void)
 	dhcp_init();
 #endif //USE_DHCP
 
+
 //  do we need this ????
-//	for (i=0;i<30;i++)
-//		_delay_ms(35);
+	uint8_t i;
+	for (i=0;i<30;i++)
+		_delay_ms(35);
 
 	
 	UDP_RegisterSocket (IP(255,255,255,255), 69);
@@ -264,6 +266,7 @@ int main(void)
 	// init global vars
 	baseAddress = 0;
 	bytesInBootPage = 0;
+	currentAddress = 0;
 
 	lineBufferIdx = 0;
 	lastPacket = false;
@@ -325,6 +328,13 @@ int main(void)
 				
 				if (lastPacket)
 				{
+					// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
+					// so we have to check if there is unwritten data in the buffer
+					if (bytesInBootPage > 0)
+					{
+						writeFLASHPage(currentAddress);        
+					}
+					
 					jumpToApplication();
 				}
 				

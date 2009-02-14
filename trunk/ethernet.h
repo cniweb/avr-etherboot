@@ -63,7 +63,7 @@ struct IP_Header	{
 	unsigned int	IP_Id;					//ID des Packet für Fragmentierung oder 
 											//Reassemblierung
 	unsigned char	IP_Flags;
-	unsigned int	IP_Frag_Offset;			//wird benutzt um ein fragmentiertes 
+	unsigned char	IP_Frag_Offset;			//wird benutzt um ein fragmentiertes 
 											//IP Packet wieder korrekt zusammenzusetzen
 	unsigned char	IP_ttl;					//8 Bit Time to Live die lebenszeit eines Paket
 	unsigned char	IP_Proto;				//Zeigt das höherschichtige Protokoll an 
