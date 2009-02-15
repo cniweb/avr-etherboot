@@ -34,22 +34,25 @@
 
 #include "config.h"
 #include "eemem.h"
+#include "enc28j60.h"
 #include "ethernet.h"
+#include "arp.h"
 #include "udp.h"
 #include "etherflash.h"
-#include "enc28j60.h"
 
-#define true (1==1)
-#define false (!true)
+//#define true (1==1)
+//#define false (!true)
 
 uint8_t lineBuffer[46];
 uint32_t baseAddress;
 uint16_t bytesInBootPage;
 uint32_t currentAddress;
+struct UDP_SOCKET sock;
 
 void initializeHardware (void);
+uint8_t hexToByte(uint8_t *buf, uint16_t idx);
 
-inline uint8_t hexToByte(uint8_t *buf, uint16_t idx)
+uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 {
   uint8_t val = 0;
   uint8_t i, t;
@@ -196,7 +199,7 @@ void initializeHardware (void)
 }
 
 // Debugging
-#ifdef DEBUG
+/*
 void sendchar (unsigned char Zeichen)
 {
 	while (!(UCSRA & (1<<UDRE)));
@@ -211,20 +214,16 @@ void putstring (unsigned char *string)
 		string++;
 	}
 }
-#endif
+*/
 
 int main(void)
 {
-	
-	uint8_t *udpSendBuffer;
-	
 	// disable interrupts
 	cli();
 	
 	initializeHardware();
 	
-
-#ifdef DEBUG
+/*
 	// Debugging über UART (Mega32)
 	//DDRD = (1<<PD1);
 	//PORTD = 0;
@@ -234,7 +233,7 @@ int main(void)
 	UBRRL  = 11; // 38400 Baud
 	
 	sendchar(1);
-#endif
+*/	
 
 	// initialize ENC28J60
 	ETH_INIT();
@@ -243,117 +242,113 @@ int main(void)
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
 	stack_init ();
-	
-#if USE_DHCP
-	dhcp_init();
-#endif //USE_DHCP
 
-
-//  do we need this ????
-	uint8_t i;
-	for (i=0;i<30;i++)
+//  enc does not work without a break after init
+	for (uint8_t i=0;i<30;i++)
 		_delay_ms(35);
 
 	
-	UDP_RegisterSocket (IP(255,255,255,255), 69);
-
-	udpSendBuffer = (ethernetbuffer + (ETH_HDR_LEN + 20 + UDP_HDR_LEN));
 	
-	uint8_t lineBufferIdx;
-	uint16_t rxBufferIdx;
-	uint8_t lastPacket;
-
 	// init global vars
 	baseAddress = 0;
 	bytesInBootPage = 0;
 	currentAddress = 0;
-
-	lineBufferIdx = 0;
-	lastPacket = false;
-
+	
+	sock.Bufferfill = 0;
+	sock.lineBufferIdx = 0;
+	sock.SourcePort = ~TFTP_SERVER_PORT;
 
 	// send RRQ
+	uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
 	// get Requeststring from EEPROM to save FLASH
 	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, 12);
 	
-	sock.Bufferfill = 0;
-	UDP_SendPacket (12);
+	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
+	UDP_SendPacket (12, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
 
 	while (1)
 	{
 
 		eth_packet_dispatcher();
-		
-		if (sock.Bufferfill > 0)
-		{
-
-			// check for data packet (00 03)
-			if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
-			{ 
-												
-				// this is a data packet
-									
-				rxBufferIdx = sock.DataStartOffset+4;
-				// copy current line till newline character or end of rx buf
-				while (1)
-				{
-					if ((rxBufferIdx - sock.DataStartOffset) >= sock.Bufferfill)
-					{
-						// rx buf processed
-						// send ack and wait for next packet
-						udpSendBuffer[0]  = 0x00;
-						udpSendBuffer[1]  = 0x04; //TFTP_ACK
-
-						// last packet is shorter than 516 bytes
-						lastPacket = (sock.Bufferfill < 516);
-					
-						// mark buffer free
-						sock.Bufferfill = 0;
-						UDP_SendPacket (4);
-						break;
-					}
-					else
-					{
-						// copy next byte from rx buf to line buf
-						lineBuffer[lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
-						if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
-						{
-							// newline
-							processLineBuffer(lineBufferIdx);
-							lineBufferIdx = 0;
-						}
-					}
-					
-				}
-				
-				if (lastPacket)
-				{
-					// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
-					// so we have to check if there is unwritten data in the buffer
-					if (bytesInBootPage > 0)
-					{
-						writeFLASHPage(currentAddress);        
-					}
-					
-					jumpToApplication();
-				}
-				
-
-			}
-			else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
-			{
-				// error -> reboot to application
-				jumpToApplication();
-			}
-		
-		}
-		else
-		{
-			_delay_ms(2);
-		}
+#if USE_DHCP
+		dhcp();	// check for end of lease
+#endif //USE_DHCP
+	
+		_delay_ms(2);
 
 	}
 	
 	return(0);
+}
 
+
+void tftp_get (void)
+{
+	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
+	ETH_packet = (struct ETH_header *) ethernetbuffer;
+	struct IP_header * IP_packet;		// IP_struct anlegen
+	IP_packet = ( struct IP_header *) &ethernetbuffer[ETH_HDR_LEN];
+	struct UDP_header * UDP_packet;		// TCP_struct anlegen
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+
+	if (sock.Bufferfill == 0)
+	{
+        arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
+		
+		sock.DestinationIP = IP_packet->IP_Srcaddr;
+
+		// Größe der Daten eintragen
+		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
+
+		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
+		sock.DestinationPort = UDP_packet->UDP_SourcePort;
+
+		// Offset für UDP-Daten im Ethernetfrane berechnen
+		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
+		
+		// check for data packet (00 03)
+		if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+		{	// this is a data packet
+			uint16_t rxBufferIdx = sock.DataStartOffset+4;
+			// copy current line till newline character or end of rx buf
+			while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
+			{
+				// copy next byte from rx buf to line buf
+				lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
+				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
+				{
+					// newline
+					processLineBuffer(sock.lineBufferIdx);
+					sock.lineBufferIdx = 0;
+				}
+			}
+			
+			// rx buf processed
+			// send ack and wait for next packet
+			uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+			udpSendBuffer[0]  = 0x00;
+			udpSendBuffer[1]  = 0x04; //TFTP_ACK
+
+			// mark buffer free
+			sock.Bufferfill = 0;
+			UDP_SendPacket (4, sock.SourcePort, TFTP_SERVER_PORT, sock.DestinationIP);
+			
+			// last packet is shorter than 516 bytes
+			if (sock.Bufferfill < 516)
+			{
+				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
+ 				// so we have to check if there is unwritten data in the buffer
+				if (bytesInBootPage > 0)
+				{
+					writeFLASHPage(currentAddress);        
+				}
+				jumpToApplication();
+			}
+		}
+		else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
+		{
+			// error -> reboot to application
+			jumpToApplication();
+		}
+	}
 }

@@ -33,15 +33,22 @@
 //@{
 #include <stdio.h>
 #include <stdlib.h>
-#include <avr/pgmspace.h>
 // #include "math.h"
-#include "arp.h"
+#include "checksum.h"
 #include "ethernet.h"
 #include "udp.h"
+#include "arp.h"
 #include "enc28j60.h"
-#include "checksum.h"
 
-struct UDP_SOCKET sock;
+//struct UDP_SOCKET sock;
+
+UDP_PORT_ITEM UDP_PORT_TABLE[MAX_UDP_ENTRY]; // Port-Tabelle
+
+void udp_init(void)
+{
+	for (uint8_t i=0; i<MAX_UDP_ENTRY; i++)
+		UDP_PORT_TABLE[i].port = 0;
+}
 
 /* -----------------------------------------------------------------------------------------------------------*/
 /*! Hier findet die Bearbeitung des Packetes statt welches ein UDP-Packet enthaelt. Es wir versucht die 
@@ -53,110 +60,96 @@ struct UDP_SOCKET sock;
  * \return  NONE
  */
 /* -----------------------------------------------------------------------------------------------------------*/
-void udp (unsigned int packet_length)
+void udp (void)
 {
-	
-	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
-	ETH_packet = (struct ETH_header *) ethernetbuffer;
-	struct IP_Header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_Header *) &ethernetbuffer[ETH_HDR_LEN];
-	struct UDP_header * UDP_packet;		// TCP_struct anlegen
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	unsigned char port_index = 0;	
+	struct UDP_header *udp;
+    
+	udp = (struct UDP_header *)&ethernetbuffer[UDP_OFFSET];
 
-	if (sock.SourcePort == UDP_packet->UDP_DestinationPort && sock.Bufferfill == 0)
-	{
-
-		// Größe der Daten eintragen
-		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
-
-		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
-		sock.DestinationPort = UDP_packet->UDP_SourcePort;
-
-		// Offset für UDP-Daten im Ethernetfrane berechnen
-		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
-		
+	//UDP DestPort mit Portanwendungsliste durchführen
+	while (UDP_PORT_TABLE[port_index].port && UDP_PORT_TABLE[port_index].port!=(htons(udp->UDP_DestinationPort)))
+	{ 
+		port_index++;
 	}
-}
-
-/* -----------------------------------------------------------------------------------------------------------*/
-/*!\brief Registriert ein Socket in den die Daten fuer ein Verbindung gehalten werden um die ausgehenden und einghenden UDP-Packet zuzuordnen.
- * \param 	IP					Die IP-Adresse des Zielhost.
- * \param	DestinationPort		Der Zielpot des Zielhost mit den verbunden werden soll. Der Sourcport wird automatisch eingestellt. Zu beachten ist das bei einer Verbindn zu Port 67 der Sourceport auf 68 eingestellt wird.
- * \param	Bufferlenght		Groesse des Datenpuffer der vom Benutzer bereitgestellt wird. Hier werden die eingegenden UDP-Daten kopiert. Dieser Puffer sollte entsprechend der Verwendung dimensioniert sein.
- * \param	UDP_Recivebuffer	Zieger auf den Puffer der vom Benutzer bereitgestellt wird.
- * \return  Beim erfolgreichen anlegen eines Socket wird die Socketnummer zurueck gegeben. Im Fehlerfall 0xffff.
- */
-/* -----------------------------------------------------------------------------------------------------------*/
-void UDP_RegisterSocket (unsigned long IP, unsigned int DestinationPort)
-{
-	unsigned char i;
-
-	sock.DestinationPort = htons(DestinationPort);
-	sock.SourcePort =~ DestinationPort;
-
-	sock.DestinationIP = IP;
-	sock.Bufferfill = 0;
-	if ( IP == 0xffffffff )
-	{
-		for( i = 0 ; i < 6 ; i++ ) sock.MACadress[i] = 0xff;
+	
+	// Wenn index zu gross, dann beenden keine vorhandene Anwendung für den Port
+	if (!UDP_PORT_TABLE[port_index].port)
+	{ 
+		//Keine vorhandene Anwendung eingetragen! (ENDE)
+		// DEBUG("UDP Keine Anwendung gefunden!\r\n");
 		return;
 	}
-/*
-	if (IS_ADDR_IN_MY_SUBNET (IP, mlNetmask))
-		if ( IS_BROADCAST_ADDR( IP, mlNetmask ) ) for( i = 0 ; i < 6 ; i++ ) sock.MACadress[i] = 0xff;
-		else GetIP2MAC( IP, &sock.MACadress );
-	else GetIP2MAC( mlGateway, &sock.MACadress );
-*/
+
+	//zugehörige Anwendung ausführen
+	UDP_PORT_TABLE[port_index].fp(0); 
 	return;
 }
 
 
-
-/* -----------------------------------------------------------------------------------------------------------*/
-/*!\brief Sendet ein UDP-Packet an einen Host.
- * \param 	SOCKET			Die Socketnummer ueber die das Packet gesendet wird.
- * param	Datalenght		Gibt die Datenlaenge der Daten in Byte an die gesendet werden sollen.
- * \param	UDP_Databuffer  Zeifer auf den Datenpuffer der gesendet werden soll.
- * \return  Bei einem Fehler beim versenden wird ungleich 0 zurueckgegeben, sonst 0.
- * \sa UDP_RegisterSocket , UDP_GetSocketState
- */
-/* -----------------------------------------------------------------------------------------------------------*/
-void UDP_SendPacket (unsigned int datalength)
+//----------------------------------------------------------------------------
+//Trägt UDP PORT/Anwendung in Anwendungsliste ein
+uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char))
 {
-	
-	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
-	ETH_packet = (struct ETH_header *) ethernetbuffer;
-	struct IP_Header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_Header *) &ethernetbuffer[ETH_HDR_LEN];
-	IP_packet->IP_Version_Headerlen = 0x45; // Standard IPv4 und Headerlenghth 20byte
-	struct UDP_header * UDP_packet;		// UDP_struct anlegen
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	unsigned char port_index = 0;
+	//Freien Eintrag in der Anwendungliste suchen
+	while ((UDP_PORT_TABLE[port_index].port) && (port_index < MAX_UDP_ENTRY))
+	{ 
+		port_index++;
+	}
+	if (port_index >= MAX_UDP_ENTRY)
+	{
+//		DEBUG("Zuviele UDP Anwendungen wurden gestartet\r\n");
+		return 0;
+	}
+//	DEBUG("UDP Anwendung wird in Liste eingetragen: Eintrag %i\r\n",port_index);
+	UDP_PORT_TABLE[port_index].port = port;
+	UDP_PORT_TABLE[port_index].fp = *fp1;
+	return 1;
+}
 
- 
-    // MakeIPHeader
-	IP_packet->IP_Version_Headerlen = 0x45;
-	IP_packet->IP_Tos = 0x0;
-	IP_packet->IP_Totallenght = htons( IP_HDR_LEN + UDP_HDR_LEN + datalength );
-	IP_packet->IP_Id = 0x1DAC;
-	IP_packet->IP_Flags = 0x40;
-	IP_packet->IP_Frag_Offset = 0x0;
-	IP_packet->IP_ttl = 64 ;
-	IP_packet->IP_Proto = PROT_UDP;
-	IP_packet->IP_Hdr_Cksum = 0x0;
-	IP_packet->IP_Srcaddr = mlIP;
-	IP_packet->IP_Destaddr = sock.DestinationIP;
-	IP_packet->IP_Hdr_Cksum = Checksum_16( &ethernetbuffer[ETH_HDR_LEN] ,(IP_packet->IP_Version_Headerlen & 0x0f) * 4 );
 
-	// MakeUDPheader
-	UDP_packet->UDP_DestinationPort = sock.DestinationPort;
-	UDP_packet->UDP_SourcePort = sock.SourcePort;
-	UDP_packet->UDP_Checksum = 0;
-	UDP_packet->UDP_Datalenght = htons(8 + datalength);
+//----------------------------------------------------------------------------
+//Diese Routine Erzeugt ein neues UDP Packet
+void UDP_SendPacket(unsigned int  data_length,
+					unsigned int  src_port,
+					unsigned int  dest_port,
+					unsigned long dest_ip)
+{
+    uint16_t  result16;
+    unsigned long result32;
 
-	MakeETHheader ((unsigned char *)sock.MACadress);
+    struct UDP_header *udp;
+    struct IP_header  *ip;
 
-	// sendEthernetframe
-	ETH_PACKET_SEND(ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN + datalength, ethernetbuffer);
+    udp = (struct UDP_header *)&ethernetbuffer[UDP_OFFSET];
+    ip  = (struct IP_header  *)&ethernetbuffer[IP_OFFSET];
+  
+    udp->UDP_SourcePort  = htons(src_port);
+    udp->UDP_DestinationPort = htons(dest_port);
+
+    data_length     += UDP_HDR_LEN;                //UDP Packetlength
+    udp->UDP_Datalenght = htons(data_length);
+
+    data_length     += IP_HDR_LEN;                //IP Headerlänge
+    ip->IP_Totallenght = htons(data_length);
+    data_length += ETH_HDR_LEN;
+    ip->IP_Proto = PROT_UDP;
+    Make_IP_Header (ethernetbuffer,dest_ip);
+
+    udp->UDP_Checksum = 0;
+  
+    //Berechnet Headerlänge und Addiert Pseudoheaderlänge 2XIP = 8
+    result16 = htons(ip->IP_Totallenght) + 8;
+    result16 = result16 - ((ip->IP_Version_Headerlen & 0x0F) << 2);
+    result32 = result16 + 0x09;
+  
+    //Routine berechnet die Checksumme
+    result16 = Checksum_16 ((&ip->IP_Version_Headerlen+12), result16, result32);
+    udp->UDP_Checksum = result16;
+
+    ETH_PACKET_SEND(data_length,ethernetbuffer); //send...
+    return;
 }
 
 

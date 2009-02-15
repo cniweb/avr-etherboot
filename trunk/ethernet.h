@@ -27,6 +27,13 @@
 // Schaut ob Ziel-IP in diesen Subnet liegt 
 #define IS_ADDR_IN_MY_SUBNET( ip, mask ) ( ( ip & ~mask ) == ( mlIP & ~mask ) )
 
+#define htons(A) ((((A) & 0xff00) >> 8) | (((A) & 0x00ff) << 8))
+#define htonl(A) ((((A) & 0xff000000) >> 24) | (((A) & 0x00ff0000) >> 8) | \
+			 (((A) & 0x0000ff00) << 8) | (((A) & 0x000000ff) << 24)) 
+#define ntohs htons 
+#define ntohl htonl
+
+
 #define ETHERNET_MIN_PACKET_LENGTH	0x3C
  
 //IP Protocol Types
@@ -34,17 +41,52 @@
 #define	PROT_TCP				0x06	//zeigt an die Nutzlasten enthalten das TCP Prot.
 #define	PROT_UDP				0x11	//zeigt an die Nutzlasten enthalten das UDP Prot.	
 
+#define ETH_HDR_LEN 			14
+#define ARP_HDR_LEN 			28
 #define IP_HDR_LEN 				20
 #define TCP_HDR_LEN 			20
 #define UDP_HDR_LEN				8
-#define ETH_HDR_LEN 			14
-#define TCP_DATA_START			(IP_VERS_LEN + TCP_HDR_LEN + ETH_HDR_LEN)
-#define UDP_DATA_START			(IP_VERS_LEN + UDP_HDR_LEN + ETH_HDR_LEN)
+#define TCP_DATA_START			(IP_HDR_LEN + TCP_HDR_LEN + ETH_HDR_LEN)
+#define UDP_DATA_START			(IP_HDR_LEN + UDP_HDR_LEN + ETH_HDR_LEN)
+
+#define ETHER_OFFSET			0x00
+#define ARP_OFFSET				0x0E
+#define IP_OFFSET				0x0E
+#define UDP_OFFSET				0x22
+
+#define ARP_REPLY_LEN			60
+#define ARP_REQUEST_LEN			42
+#define ARP_MAX_ENTRY_TIME 		100 //100sec.
+
+#define MAX_UDP_ENTRY	5		// max possible number of udp connections at a time
+#define MAX_ARP_ENTRY	5
+	
+#define TFTP_SERVER_PORT		69
 
 struct ETH_header {
 	unsigned char ETH_destMac[6];	
 	unsigned char ETH_sourceMac[6];
-	unsigned int ETH_typefield;
+	unsigned int ETH_typefield;		//Nutzlast 0x0800=IP Datagramm;0x0806 = ARP
+};
+
+//----------------------------------------------------------------------------
+//Aufbau eines ARP Header
+//	
+//	2 BYTE Hardware Typ					|	2 BYTE Protokoll Typ	
+//	1 BYTE Länge Hardwareadresse (MAC)	|	1 BYTE Länge Protokolladresse (IP)
+//	2 BYTE Operation
+//	6 BYTE MAC Adresse Absender			|	4 BYTE IP Adresse Absender
+//	6 BYTE MAC Adresse Empfänger		|	4 BYTE IP Adresse Empfänger	
+struct ARP_header {
+	unsigned int HWtype;				// 2 Byte
+	unsigned int Protocoltype;			// 2 Byte
+	unsigned char HWsize;				// 1 Byte
+	unsigned char Protocolsize;			// 1 Byte
+	unsigned int ARP_Opcode;			// 2 Byte
+	unsigned char ARP_sourceMac[6];		// 6 Byte
+	unsigned long ARP_sourceIP;			// 4 Byte
+	unsigned char ARP_destMac[6];		// 6 Byte
+	unsigned long ARP_destIP;			// 4 Byte = 28
 };
 
 //----------------------------------------------------------------------------
@@ -55,7 +97,7 @@ struct ETH_header {
 //8B Time to Live	|8B Protokoll	|16B Header Prüfsumme 
 //32B IP Quelladresse
 //32B IB Zieladresse
-struct IP_Header	{
+struct IP_header	{
 	unsigned char	IP_Version_Headerlen;	//4 BIT Die Versionsnummer von IP, 
 											//meistens also 4 + 4Bit Headergröße 	
 	unsigned char	IP_Tos;					//Type of Service
@@ -79,13 +121,16 @@ extern unsigned long mlIP;
 extern unsigned long mlNetmask;
 extern unsigned long mlGateway;
 extern unsigned long mlDNSserver;
+extern unsigned char mlMAC[];
 extern unsigned char ethernetbuffer[];
 
 void stack_init (void);
 
 void eth_packet_dispatcher(void);
 
-void MakeETHheader (unsigned char * MACadress);
+void Make_ETH_Header (unsigned char *buffer, unsigned long dest_ip);
+
+void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip);
 
 
 #endif
