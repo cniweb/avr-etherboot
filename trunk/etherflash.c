@@ -38,6 +38,7 @@
 #include "ethernet.h"
 #include "arp.h"
 #include "udp.h"
+#include "dhcpc.h"
 #include "etherflash.h"
 
 //#define true (1==1)
@@ -331,7 +332,7 @@ void tftp_get (void)
 
 			// mark buffer free
 			sock.Bufferfill = 0;
-			UDP_SendPacket (4, sock.SourcePort, TFTP_SERVER_PORT, sock.DestinationIP);
+			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
 			
 			// last packet is shorter than 516 bytes
 			if (sock.Bufferfill < 516)
