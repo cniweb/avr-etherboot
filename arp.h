@@ -19,34 +19,21 @@
  */
 //@{
 #ifndef __ARP_H__
+#define __ARP_H__
 
-	#define __ARP_H__
-
-	extern void arp (unsigned int packet_length);
-	unsigned int GetIP2MAC (unsigned long IP, unsigned char * MACbuffer);
-
-	#define MAX_ARPTABLE_ENTRYS 1
-	
-	#define ARP_ANSWER		0
-	#define NO_ARP_ANSWER	!ARP_ANSWER
+//	#define ARP_ANSWER		0
+//	#define NO_ARP_ANSWER	!ARP_ANSWER
 	
 	struct ARP_TABLE {
 		unsigned long IP;
 		unsigned char MAC[6];
+		uint8_t time;
 	};
-
-	#define ARP_HEADER_LENGHT 28
 	
-	struct ARP_header {
-		unsigned int HWtype;				// 2 Byte
-		unsigned int Protocoltype;			// 2 Byte
-		unsigned char HWsize;				// 1 Byte
-		unsigned char Protocolsize;			// 1 Byte
-		unsigned int ARP_Opcode;			// 2 Byte
-		unsigned char ARP_sourceMac[6];		// 6 Byte
-		unsigned long ARP_sourceIP;			// 4 Byte
-		unsigned char ARP_destMac[6];		// 6 Byte
-		unsigned long ARP_destIP;			// 4 Byte = 28
-	};
+	void arp_reply (void);
+	void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac);
+	unsigned char *arp_entry_search (unsigned long dest_ip);
+
+
 
 #endif

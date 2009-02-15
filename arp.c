@@ -32,53 +32,93 @@
 #include "enc28j60.h"
 
 
-struct ARP_TABLE ARPtable[ MAX_ARPTABLE_ENTRYS ];
-struct ARP_TABLE *ARP_table;
+struct ARP_TABLE ARPtable[ MAX_ARP_ENTRY ];
 
-void arp (unsigned int packet_length)
+//----------------------------------------------------------------------------
+//Diese Routine Antwortet auf ein ARP Paket
+void arp_reply (void)
 {
-	unsigned char i;
-
 	struct ETH_header *ETH_packet;
-	ETH_packet = (struct ETH_header *) ethernetbuffer; 
 	struct ARP_header *ARP_packet;
-	ARP_packet = (struct ARP_header *) &ethernetbuffer[ETH_HDR_LEN];
-	switch ( ARP_packet->ARP_Opcode ) {
-		
-	case 0x0100:
-		if ( ARP_packet->ARP_destIP != mlIP )
+
+	ETH_packet = (struct ETH_header *)&ethernetbuffer[ETHER_OFFSET];
+	ARP_packet      = (struct ARP_header *)&ethernetbuffer[ARP_OFFSET];
+	
+    if(ARP_packet->ARP_destIP == mlIP) // Für uns?
+    {
+		uint8_t i;
+        if (ARP_packet->ARP_Opcode == 0x0100) // htons(0x0001)   // Request?
+        {
+            arp_entry_add(ARP_packet->ARP_sourceIP, ARP_packet->ARP_sourceMac); 
+            Make_ETH_Header (ethernetbuffer, ARP_packet->ARP_sourceIP); // Erzeugt ein neuen Ethernetheader
+            ETH_packet->ETH_typefield = 0x0608; // htons(0x0806) Nutzlast 0x0800=IP Datagramm;0x0806 = ARP
+      
+			// mac und ip des senders in ziel kopieren
+			for ( i = 0; i < 10; i++ )
+				ARP_packet->ARP_destMac[i] = ARP_packet->ARP_sourceMac[i]; // MAC und IP umkopieren
+			
+			// meine mac und ip als absender einsetzen
+			for ( i = 0; i < 6 ; i++ )
+				ARP_packet->ARP_sourceMac[i] = mlMAC[i];
+			
+			ARP_packet->ARP_sourceIP = mlIP; // IP einsetzen
+      
+            ARP_packet->ARP_Opcode = 0x0200;	// htons(0x0002) ARP op = ECHO  
+      
+            ETH_PACKET_SEND(ARP_REPLY_LEN, ethernetbuffer);          // ARP Reply senden...
+            return;
+        }
+        else if ( ARP_packet->ARP_Opcode == 0x0200 )  // htons(0x0002) REPLY von einem anderen Client
+        {
+            arp_entry_add(ARP_packet->ARP_sourceIP, ARP_packet->ARP_sourceMac);
+        }
+    }
+    return;
+}
+
+//----------------------------------------------------------------------------
+//erzeugt einen ARP - Eintrag wenn noch nicht vorhanden 
+void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac)
+{
+    //Eintrag schon vorhanden?
+	uint8_t i;
+    for (i = 0; i < MAX_ARP_ENTRY; i++)
+    {
+		if(ARPtable[i].IP == sourceIP)
 		{
+			//Eintrag gefunden Time refresh
+			ARPtable[i].time = ARP_MAX_ENTRY_TIME;
 			return;
 		}
+    }
+  
+    //Freien Eintrag finden
+    for (i = 0; i < MAX_ARP_ENTRY; i++)
+    {
+        if(ARPtable[i].IP == 0)
+        {
+			for(uint8_t a = 0; a < 6; a++)
+			{
+				ARPtable[i].MAC[a] = sourceMac[a]; 
+			}
+			ARPtable[i].IP   = sourceIP;
+			ARPtable[i].time = ARP_MAX_ENTRY_TIME;
+        }
+    }
+    return;
+}
 
-		ARP_packet->ARP_Opcode = 0x0200;
-		
-		// mac und ip des senders in ziel kopieren
-		for ( i = 0; i < 10; i++ )
-			ARP_packet->ARP_destMac[i] = ARP_packet->ARP_sourceMac[i]; // MAC und IP umkopieren
-		
-		// meine mac und ip als absender einsetzen
-		for ( i = 0; i < 6 ; i++ )
-			ARP_packet->ARP_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]); // MAC einsetzen
-		
-		ARP_packet->ARP_sourceIP = mlIP ; // IP einsetzen
-		
-		// sourceMAC in destMAC eintragen und meine MAC in sourceMAC kopieren
-		for (i = 0 ; i < 6 ; i++)
-		{	
-			ETH_packet->ETH_destMac[i] = ETH_packet->ETH_sourceMac[i];	
-			ETH_packet->ETH_sourceMac[i] = eeprom_read_byte(&enc28j60_config[ENC28J60_CONFIG_OFFSET_MAC + i*2]);
+
+//----------------------------------------------------------------------------
+//Diese Routine sucht anhand der IP den ARP eintrag
+unsigned char *arp_entry_search (unsigned long dest_ip)
+{
+	for (uint8_t i = 0; i < MAX_ARP_ENTRY; i++)
+	{
+		if(ARPtable[i].IP == dest_ip)
+		{
+			return ARPtable[i].MAC;
 		}
-		
-		ETH_PACKET_SEND (packet_length, ethernetbuffer);
-
-		break;
-
-	case 0x0200:
-		ARP_table = &ARPtable[0];
-		ARP_table->IP = ARP_packet->ARP_sourceIP;
-		for ( i = 0 ; i < 6 ; i++ ) 
-			ARP_table->MAC[i] = ARP_packet->ARP_sourceMac[i];
-		break;
 	}
+	return NULL;
 }

@@ -33,8 +33,10 @@
 //@{
 
 #include <stdint.h>
+#include "checksum.h"
+#include "ethernet.h"
 
-uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght)
+uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght, unsigned long startval)
 {
 	struct TPWORDACC
 	{
@@ -46,7 +48,7 @@ uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght)
 		struct TPWORDACC nWordAcc;
 		unsigned long lLongAcc;
 	} checksum;
-	checksum.lLongAcc = 0x0;
+	checksum.lLongAcc = htons(startval);
 	uint16_t *pP16 = (uint16_t *)pointer;
 	
 	//Jetzt werden alle Packete in einer While Schleife addiert
