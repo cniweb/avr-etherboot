@@ -239,14 +239,14 @@ int main(void)
 	// initialize ENC28J60
 	ETH_INIT();
 
+//  enc does not work without a break after init
+	for (uint8_t i=0;i<30;i++)
+		_delay_ms(35);
+
 	// Clear receive buffer of ENC28J60
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
 	stack_init ();
-
-//  enc does not work without a break after init
-	for (uint8_t i=0;i<30;i++)
-		_delay_ms(35);
 
 	
 	
