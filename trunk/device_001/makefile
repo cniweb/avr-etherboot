@@ -270,7 +270,8 @@ EXTMEMOPTS =
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
-LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+#LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+LDFLAGS = -Wl,--section-start=.BootLoader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))

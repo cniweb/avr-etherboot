@@ -102,6 +102,9 @@ void enc28j60ReadBuffer(unsigned int len, unsigned char * data)
 //*********************************************************************************************************
 void enc28j60WriteBuffer(unsigned int len, unsigned char * data)
 {
+#if DEBUG_AV
+	putpgmstring("enc28j60WriteBuffer start\r\n");
+#endif	
 	// assert CS
 	ENC28J60_CONTROL_PORT &= ~(1<<ENC28J60_PIN_CS);
 
@@ -110,11 +113,18 @@ void enc28j60WriteBuffer(unsigned int len, unsigned char * data)
 
 	while(len--)
 	{
+#if DEBUG_AV
+		puthexbyte(*data);
+#endif
 		// write data
 		SPI_ReadWrite( *data++ );
 	}
 	// release CS
 	ENC28J60_CONTROL_PORT |= (1<<ENC28J60_PIN_CS);
+#if DEBUG_AV
+	putpgmstring("\r\n");
+	putpgmstring("enc28j60WriteBuffer end\r\n");
+#endif	
 }
 
 //*********************************************************************************************************
@@ -218,8 +228,14 @@ void enc28j60Init(void)
 	ENC28J60_CONTROL_DDR |= (1<<ENC28J60_PIN_CS);
 	ENC28J60_CONTROL_PORT |= (1<<ENC28J60_PIN_CS);
 
+	for (i=0;i<30;i++)
+		_delay_ms(35);
+
 	// perform system reset
 	enc28j60WriteOp(ENC28J60_SOFT_RESET, 0, ENC28J60_SOFT_RESET);
+
+	for (i=0;i<30;i++)
+		_delay_ms(35);
 
   	// check CLKRDY bit to see if reset is complete
 	// while(!(enc28j60Read(ESTAT) & ESTAT_CLKRDY));

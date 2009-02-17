@@ -20,7 +20,8 @@ extern unsigned long EEMEM mlIpEEP;
 extern unsigned long EEMEM mlNetmaskEEP;
 extern unsigned long EEMEM mlGatewayEEP;
 extern unsigned long EEMEM mlDNSserverEEP;
-extern unsigned char EEMEM maTFTPReqStr[12];
+#define TFTPReqStrSize	16
+extern unsigned char EEMEM maTFTPReqStr[TFTPReqStrSize];
 
 #if USE_ENC28J60	
 extern unsigned char EEMEM enc28j60_config[];

@@ -12,7 +12,13 @@ struct UDP_SOCKET {
 	uint8_t lineBufferIdx;
 };
 
-void tftp_get (void);
+void tftp_get (void) SEC_BOOTLOADER;
+uint8_t hexToByte(uint8_t *buf, uint16_t idx) SEC_BOOTLOADER;
+void writeFLASHPage(uint32_t currentAddress) SEC_BOOTLOADER;
+void processLineBuffer(uint8_t bytes) SEC_BOOTLOADER;
+void jumpToApplication(void) SEC_BOOTLOADER;
+
+
 
 #define pApplication()     asm volatile ("call 0x00000"::)
 

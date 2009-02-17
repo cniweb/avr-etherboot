@@ -33,7 +33,7 @@
 //@{
 #include <stdio.h>
 #include <stdlib.h>
-// #include "math.h"
+#include "config.h"
 #include "checksum.h"
 #include "ethernet.h"
 #include "udp.h"
@@ -110,6 +110,23 @@ uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char))
 
 
 //----------------------------------------------------------------------------
+//Löscht UDP Anwendung aus der Anwendungsliste
+void UDP_UnRegisterSocket (unsigned int port)
+{
+    unsigned char i;
+
+    for (i = 0; i < MAX_UDP_ENTRY; i++)
+    {
+        if ( UDP_PORT_TABLE[i].port == port )
+        {
+            UDP_PORT_TABLE[i].port = 0;
+        }
+    }
+    return;
+}
+
+
+//----------------------------------------------------------------------------
 //Diese Routine Erzeugt ein neues UDP Packet
 void UDP_SendPacket(unsigned int  data_length,
 					unsigned int  src_port,
@@ -149,6 +166,9 @@ void UDP_SendPacket(unsigned int  data_length,
     udp->UDP_Checksum = result16;
 
     ETH_PACKET_SEND(data_length,ethernetbuffer); //send...
+#if DEBUG_AV
+	putpgmstring("UDP_SendPacket\r\n");
+#endif	
     return;
 }
 

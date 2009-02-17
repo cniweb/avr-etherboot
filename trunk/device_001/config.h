@@ -78,6 +78,9 @@
 #define MOSI		ENC28J60_PIN_MOSI
 #define SCK			ENC28J60_PIN_SCK
 
+
+#define SEC_BOOTLOADER __attribute__((section(".BootLoader")))
+
 /////////////////////////////// HELPERS ////////////////////////////////////////////
 //DO NOT CHANGE ANYTHING BELOW!
 
@@ -114,6 +117,19 @@
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
 
+#define DEBUG_AV	0
+
+// Debugging
+#if DEBUG_AV
+
+#include <avr/pgmspace.h>
+
+void sendchar (unsigned char Zeichen);
+void puthexbyte(uint8_t bt);
+void putstring (unsigned char *string);
+void putPGMstring(const char *progmem_s);
+#define putpgmstring(__s) putPGMstring(PSTR(__s))
+#endif
 
 #endif
 

@@ -7,12 +7,12 @@
  ****************************************************************************/
 #include <avr/interrupt.h>
 #include <stdio.h>
+#include "config.h"
 #include "ethernet.h"
 #include "checksum.h"
 #include "arp.h"
 #include "enc28j60.h"
 #include "udp.h"
-#include "config.h"
 #include "eemem.h"
 #if USE_DHCP
 #include "dhcpc.h"
@@ -126,18 +126,19 @@ void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip)
     ip       = (struct IP_header *)&buffer[IP_OFFSET];
 
     Make_ETH_Header (buffer, dest_ip);         //Erzeugt einen neuen Ethernetheader
-    ethernet->ETH_typefield = 0x0080;	// htons(0x0800) Nutzlast 0x0800=IP
+    ethernet->ETH_typefield = 0x0008;	// htons(0x0800) Nutzlast 0x0800=IP
 
     IP_id_counter++;
 
-    ip->IP_Frag_Offset = 0x0040;  //don't fragment
-    ip->IP_ttl         = 64;      //max. hops
-    ip->IP_Id          = htons(IP_id_counter);
+    ip->IP_Flags		= 0x40;
+    ip->IP_Frag_Offset	= 0x00;  //don't fragment
+    ip->IP_ttl			= 64;      //max. hops
+    ip->IP_Id			= htons(IP_id_counter);
     ip->IP_Version_Headerlen    = 0x45;  //4 BIT Die Versionsnummer von IP, 
-    ip->IP_Tos         = 0;
+    ip->IP_Tos			= 0;
     ip->IP_Destaddr     = dest_ip;
-    ip->IP_Srcaddr     = mlIP;
-    ip->IP_Hdr_Cksum   = 0;
+    ip->IP_Srcaddr		= mlIP;
+    ip->IP_Hdr_Cksum	= 0;
   
     //Berechnung der IP Header länge  
     result16 = (ip->IP_Version_Headerlen & 0x0F) << 2;
