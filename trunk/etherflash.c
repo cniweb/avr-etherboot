@@ -287,9 +287,6 @@ int main(void)
 	
 	ETH_PACKET_SEND(60,ethernetbuffer);
 	ETH_PACKET_SEND(60,ethernetbuffer);
-//  enc does not work without a break after init
-//	for (uint8_t i=0;i<30;i++)
-//		_delay_ms(35);
 
 	// Clear receive buffer of ENC28J60
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
@@ -318,6 +315,7 @@ int main(void)
 	
 	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
 	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
+	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
 
 	while (1)
 	{
@@ -337,9 +335,16 @@ void tftp_get (void)
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
 	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer[ETH_HDR_LEN];
-	struct UDP_header * UDP_packet;		// TCP_struct anlegen
+	IP_packet = ( struct IP_header *) &ethernetbuffer[IP_OFFSET];
+	struct UDP_header * UDP_packet;
 	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	//UDP_packet = ( struct UDP_header *) &ethernetbuffer[UDP_OFFSET];
+	
+	uint8_t lastPacket = 0;
+
+	struct TFTP_RESPONSE *tftp;
+
+	putpgmstring("tftp\r\n");
 
 	if (sock.Bufferfill == 0)
 	{
@@ -350,22 +355,34 @@ void tftp_get (void)
 		// Größe der Daten eintragen
 		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
 
+		// last packet is shorter than 516 bytes
+		if (sock.Bufferfill < 516)
+			lastPacket = 1;
+		
 		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
-		sock.DestinationPort = UDP_packet->UDP_SourcePort;
+		sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
 
 		// Offset für UDP-Daten im Ethernetfrane berechnen
+		tftp = (struct TFTP_RESPONSE *)&ethernetbuffer[UDP_DATA_START];
+		
 		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
 		
 		// check for data packet (00 03)
-		if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+		//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+		if (tftp->op == 0x0300)
 		{	// this is a data packet
 			uint16_t rxBufferIdx = sock.DataStartOffset+4;
+			//uint16_t rxBufferIdx = 0;
 			// copy current line till newline character or end of rx buf
 			while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
+			//while ((rxBufferIdx) < (sock.Bufferfill-4))
 			{
+
 				// copy next byte from rx buf to line buf
+				//lineBuffer[sock.lineBufferIdx++] = tftp->data[rxBufferIdx++]; 
 				lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
 				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
+				//if (tftp->data[rxBufferIdx-1] == 0x0A)
 				{
 					// newline
 #if DEBUG_AV
@@ -373,22 +390,24 @@ void tftp_get (void)
 	putstring(lineBuffer);
 #endif	
 					processLineBuffer(sock.lineBufferIdx);
+									
 					sock.lineBufferIdx = 0;
 				}
 			}
 			
 			// rx buf processed
 			// send ack and wait for next packet
-			uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
-			udpSendBuffer[0]  = 0x00;
-			udpSendBuffer[1]  = 0x04; //TFTP_ACK
+			//uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+			//uint8_t *udpSendBuffer = &ethernetbuffer[UDP_DATA_START];
+			//udpSendBuffer[0]  = 0x00;
+			//udpSendBuffer[1]  = 0x04; //TFTP_ACK
+			tftp->op = 0x0400;
 
 			// mark buffer free
 			sock.Bufferfill = 0;
 			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
 			
-			// last packet is shorter than 516 bytes
-			if (sock.Bufferfill < 516)
+			if (lastPacket)
 			{
 				UDP_UnRegisterSocket(sock.SourcePort);
 				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
@@ -404,7 +423,8 @@ void tftp_get (void)
 #endif	
 			}
 		}
-		else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
+		//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
+		else if (tftp->op == 0x0500)
 		{
 			// error -> reboot to application
 			UDP_UnRegisterSocket(sock.SourcePort);

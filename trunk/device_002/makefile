@@ -49,8 +49,10 @@
 #F_CPU = 16000000
 
 # atmega32
+#MCU = atmega644
 MCU = atmega32
-BOOTLOADER_START = 0x7000 # byteadresse!
+BOOTLOADER_START = 0x7000 # ATMega32 2048 word bootloader (byteadresse!)
+#BOOTLOADER_START = 0xF000 # ATMega644 2048 Word Bootloader (byteadresse!)
 F_CPU =  7372800
 
 
@@ -89,7 +91,8 @@ OBJDIR = .
 
 
 # List C source files here. (C dependencies are automatically generated.)
-SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c eemem.c
+SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c ../dhcpc.c eemem.c
+# SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c eemem.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
@@ -269,7 +272,8 @@ EXTMEMOPTS =
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
-LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+#LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+LDFLAGS = -Wl,--section-start=.BootLoader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
