@@ -153,33 +153,42 @@ unsigned char dhcp (void)
       case DHCP_STATE_IDLE:
         dhcp_message(DHCPDISCOVER);
         dhcp_timer = 5;
-      break;
-      case DHCP_STATE_DISCOVER_SENT:
+		break;
+      
+	  case DHCP_STATE_DISCOVER_SENT:
         if (dhcp_timer == 0) 
         {
           dhcp_state = DHCP_STATE_IDLE;
           timeout_cnt++;
         }
-      break;
-      case DHCP_STATE_OFFER_RCVD:
+		break;
+      
+	  case DHCP_STATE_OFFER_RCVD:
         timeout_cnt = 0;
 				dhcp_state = DHCP_STATE_SEND_REQUEST;
-      break;
-      case DHCP_STATE_SEND_REQUEST:
+		break;
+      
+	  case DHCP_STATE_SEND_REQUEST:
         dhcp_timer  = 5;
         dhcp_message(DHCPREQUEST);
-      break;
-      case DHCP_STATE_REQUEST_SENT:
+		break;
+      
+	  case DHCP_STATE_REQUEST_SENT:
         if (dhcp_timer == 0) 
         {
           dhcp_state = DHCP_STATE_SEND_REQUEST;
           timeout_cnt++;
         }
-      break;
-      case DHCP_STATE_ACK_RCVD:
+		break;
+      
+	  case DHCP_STATE_ACK_RCVD:
  //       DHCP_DEBUG("LEASE %2x%2x%2x%2x\r\n", cache.lease[0],cache.lease[1],cache.lease[2],cache.lease[3]);
 #if DEBUG_AV
 	putpgmstring("DHCP DHCP_STATE_ACK_RCVD\r\n");
+	puthexbyte(mlIP>>24);
+	puthexbyte(mlIP>>16);
+	puthexbyte(mlIP>>8);
+	puthexbyte(mlIP>>0);
 #endif	
         dhcp_lease = cache.lease;
 		// write to eeprom only if data has changed, we don't want to wear it out
@@ -193,15 +202,21 @@ unsigned char dhcp (void)
             eeprom_write_dword(&mlDNSserverEEP, mlDNSserver);
 		dhcp_res.nStat = 0;
         dhcp_state = DHCP_STATE_FINISHED;
-      break;
-      case DHCP_STATE_NAK_RCVD:
+		break;
+      
+	  case DHCP_STATE_NAK_RCVD:
         dhcp_state = DHCP_STATE_IDLE;
-      break;
+		break;
+		
     }
-    eth_packet_dispatcher();
+    
+	eth_packet_dispatcher();
+	
   }
   while ( dhcp_state != DHCP_STATE_FINISHED );
+  
   return(0);
+  
 }
 
 //----------------------------------------------------------------------------
@@ -254,7 +269,6 @@ void dhcp_message (unsigned char type)
   *options++       = ((unsigned char *)&mlIP)[1];
   *options++       = ((unsigned char *)&mlIP)[2];
   *options++       = ((unsigned char *)&mlIP)[3];
-
 
   switch (type)
   {
@@ -511,6 +525,15 @@ void dhcp_get (void)
   {
     case DHCPOFFER:
       // this will be our IP address
+		if (dhcp_state != DHCP_STATE_DISCOVER_SENT)
+		{
+			// we are not waiting for a dhcp offer 
+			// this happens for example when there are more than one dhcp server answering)
+#if DEBUG_AV
+			putpgmstring("Received 2nd DHCPOFFER\r\n");
+#endif				
+			return;
+		}
 		if ( mlIP != msg->yiaddr)
 		{
 			mlIP = msg->yiaddr;

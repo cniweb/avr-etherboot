@@ -8,7 +8,7 @@
 #define	MYMAC3 0x02
 #define	MYMAC4 0x03
 #define	MYMAC5 0x04
-#define	MYMAC6 0x21
+#define	MYMAC6 0x99
 
 #if defined (__AVR_ATmega32__)
 	#define MTU_SIZE 600
@@ -24,8 +24,28 @@
 
 /////////////////////////////// PIN SETUP ////////////////////////////////////////////
 
+/*
+// ATMEGA2561
+
+//-> enc28j60
+#define ENC28J60_CONTROL_PORT	PORTG
+#define ENC28J60_CONTROL_DDR	DDRG
+#define ENC28J60_CONTROL_CS	3
+#define ENC28J60_INT_PORTBIT    6
+
+// -> SPI
+#define SPI_PORT		PORTB
+#define SPI_DDR			DDRB
+#define SS				PB0
+#define MISO			PB3
+#define MOSI			PB2
+#define SCK				PB1
+*/
 
 // ATMEGA32
+	
+#define USE_DHCP		1
+	
 //-> enc28j60
 #define USE_ENC28J60	1
 
@@ -56,6 +76,8 @@
 #define MOSI		ENC28J60_PIN_MOSI
 #define SCK			ENC28J60_PIN_SCK
 
+
+#define SEC_BOOTLOADER __attribute__((section(".BootLoader")))
 
 /////////////////////////////// HELPERS ////////////////////////////////////////////
 //DO NOT CHANGE ANYTHING BELOW!
@@ -92,6 +114,20 @@
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
 
+#define DEBUG_AV	1
+
+// Debugging
+#if DEBUG_AV
+
+#include <avr/pgmspace.h>
+
+void sendchar (unsigned char Zeichen);
+void puthexbyte(uint8_t bt);
+void putstring (unsigned char *string);
+void putPGMstring(const char *progmem_s);
+#define putpgmstring(__s) putPGMstring(PSTR(__s))
+#endif
 
 #endif
+
 

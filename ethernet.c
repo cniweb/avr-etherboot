@@ -32,11 +32,7 @@ void stack_init (void)
 {
 	IP_id_counter = 0;
 	
-	// Adressen aus dem EEPROM lesen
-//	eeprom_read_block ((void*)&mlIP, (const void*)&mlIpEEP, 4);
-//	eeprom_read_block ((void*)&mlNetmask, (const void*)&mlNetmaskEEP, 4);
-//	eeprom_read_block ((void*)&mlGateway, (const void*)&mlGatewayEEP, 4);
-//	eeprom_read_block ((void*)&mlDNSserver, (const void*)&mlDNSserverEEP, 4);
+	// Read IP Setup from EEPROM
 	mlIP = eeprom_read_dword (&mlIpEEP);
 	mlNetmask = eeprom_read_dword (&mlNetmaskEEP);
 	mlGateway = eeprom_read_dword (&mlGatewayEEP);
