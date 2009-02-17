@@ -25,9 +25,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "config.h"
 #include "arp.h"
 #include "ethernet.h"
-#include "config.h"
 #include "eemem.h"
 #include "enc28j60.h"
 

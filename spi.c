@@ -22,10 +22,10 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include "spi.h"
-#include <avr/io.h>
 
+#include <avr/io.h>
 #include "config.h"
+#include "spi.h"
  
 /* -----------------------------------------------------------------------------------------------------------*/
 /*! Die Init fuer dir SPI-Schnittstelle. Es können verschiedene Geschwindigkeiten eingestellt werden.

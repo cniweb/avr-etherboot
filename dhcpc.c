@@ -73,6 +73,16 @@ struct dhcp_cache
   unsigned long serv_id;
 };
 
+struct DHCP_RESULT_STAT
+{
+	unsigned bStatIP:1;
+	unsigned bStatNetmask:1;
+	unsigned bStatGateway:1;
+	unsigned bStatDNSserver:1;
+	unsigned bUnused:4;
+};
+
+
 //DHCP Message types for Option 53
 #define DHCPDISCOVER   1     // client -> server
 #define DHCPOFFER      2     // server -> client
@@ -83,7 +93,6 @@ struct dhcp_cache
 #define DHCPRELEASE    7     // client -> server
 #define DHCPINFORM     8     // client -> server
 
-unsigned char dhcp_state;
 #define DHCP_STATE_IDLE             0
 #define DHCP_STATE_DISCOVER_SENT    1
 #define DHCP_STATE_OFFER_RCVD       2
@@ -94,15 +103,22 @@ unsigned char dhcp_state;
 #define DHCP_STATE_ERR              7
 #define DHCP_STATE_FINISHED         8
 
+unsigned char dhcp_state;
 struct dhcp_cache cache; 
 volatile unsigned long dhcp_lease;
 volatile unsigned char dhcp_timer;
+volatile union
+{
+	struct DHCP_RESULT_STAT btStat;
+	uint8_t nStat;
+} dhcp_res;
 
 //----------------------------------------------------------------------------
 //Init of DHCP client port
 void dhcp_init (void)
 {
   //Port in Anwendungstabelle eintragen für eingehende DHCP Daten!
+  dhcp_res.nStat = 0;
   UDP_RegisterSocket (DHCP_CLIENT_PORT, (void(*)(unsigned char))dhcp_get);
   dhcp_state = DHCP_STATE_IDLE;
   dhcp();
@@ -127,7 +143,9 @@ unsigned char dhcp (void)
     if ( timeout_cnt > 3 )
     {
       dhcp_state = DHCP_STATE_ERR;
-//      DHCP_DEBUG("DHCP timeout\r\n");
+#if DEBUG_AV
+	putpgmstring("DHCP timeout\r\n");
+#endif	
       return (1);
     }
     switch (dhcp_state)
@@ -160,11 +178,20 @@ unsigned char dhcp (void)
       break;
       case DHCP_STATE_ACK_RCVD:
  //       DHCP_DEBUG("LEASE %2x%2x%2x%2x\r\n", cache.lease[0],cache.lease[1],cache.lease[2],cache.lease[3]);
+#if DEBUG_AV
+	putpgmstring("DHCP DHCP_STATE_ACK_RCVD\r\n");
+#endif	
         dhcp_lease = cache.lease;
-		eeprom_write_dword(&mlIpEEP, mlIP);
-		eeprom_write_dword(&mlNetmaskEEP, mlNetmask);
-		eeprom_write_dword(&mlGatewayEEP, mlGateway);
-		eeprom_write_dword(&mlDNSserverEEP, mlDNSserver);
+		// write to eeprom only if data has changed, we don't want to wear it out
+		if (dhcp_res.btStat.bStatIP == 1)
+            eeprom_write_dword(&mlIpEEP, mlIP);
+		if (dhcp_res.btStat.bStatNetmask== 1)
+            eeprom_write_dword(&mlNetmaskEEP, mlNetmask);
+		if (dhcp_res.btStat.bStatGateway== 1)
+            eeprom_write_dword(&mlGatewayEEP, mlGateway);
+		if (dhcp_res.btStat.bStatDNSserver== 1)
+            eeprom_write_dword(&mlDNSserverEEP, mlDNSserver);
+		dhcp_res.nStat = 0;
         dhcp_state = DHCP_STATE_FINISHED;
       break;
       case DHCP_STATE_NAK_RCVD:
@@ -193,17 +220,17 @@ void dhcp_message (unsigned char type)
   msg->op          = 1; // BOOTREQUEST
   msg->htype       = 1; // Ethernet
   msg->hlen        = 6; // Ethernet MAC
-  msg->xid[0]      = mlMAC[6]; //use the MAC as the ID to be unique in the LAN
-  msg->xid[1]      = mlMAC[5];
-  msg->xid[2]      = mlMAC[4];
-  msg->xid[3]      = mlMAC[3];
+  msg->xid[0]      = mlMAC[5]; //use the MAC as the ID to be unique in the LAN
+  msg->xid[1]      = mlMAC[4];
+  msg->xid[2]      = mlMAC[3];
+  msg->xid[3]      = mlMAC[2];
   msg->flags       = htons(0x8000);
-  msg->chaddr[0]   = mlMAC[1];
-  msg->chaddr[1]   = mlMAC[2];
-  msg->chaddr[2]   = mlMAC[3];
-  msg->chaddr[3]   = mlMAC[4];
-  msg->chaddr[4]   = mlMAC[5];
-  msg->chaddr[5]   = mlMAC[6];
+  msg->chaddr[0]   = mlMAC[0];
+  msg->chaddr[1]   = mlMAC[1];
+  msg->chaddr[2]   = mlMAC[2];
+  msg->chaddr[3]   = mlMAC[3];
+  msg->chaddr[4]   = mlMAC[4];
+  msg->chaddr[5]   = mlMAC[5];
   
   options = &msg->options[0];  //options
   *options++       = 99;       //magic cookie
@@ -221,21 +248,21 @@ void dhcp_message (unsigned char type)
   *options++       = 3;     // router
   *options++       = 6;     // dns
 
-  if (mlIP != 0)
-  {
-	  *options++       = 50;    // Option 54: requested IP
-	  *options++       = 4;     // len = 4
-	  *options++       = ((unsigned char *)&mlIP)[0];
-	  *options++       = ((unsigned char *)&mlIP)[1];
-	  *options++       = ((unsigned char *)&mlIP)[2];
-	  *options++       = ((unsigned char *)&mlIP)[3];
-	}
+  *options++       = 50;    // Option 54: requested IP
+  *options++       = 4;     // len = 4
+  *options++       = ((unsigned char *)&mlIP)[0];
+  *options++       = ((unsigned char *)&mlIP)[1];
+  *options++       = ((unsigned char *)&mlIP)[2];
+  *options++       = ((unsigned char *)&mlIP)[3];
+
 
   switch (type)
   {
     case DHCPDISCOVER:
       dhcp_state = DHCP_STATE_DISCOVER_SENT;
-      DHCP_DEBUG("DISCOVER sent\r\n");
+#if DEBUG_AV
+	putpgmstring("DISCOVER sent\r\n");
+#endif	
     break;
     case DHCPREQUEST:
       *options++       = 54;    // Option 54: server ID
@@ -245,10 +272,14 @@ void dhcp_message (unsigned char type)
       *options++       = ((unsigned char *)&cache.serv_id)[2];
       *options++       = ((unsigned char *)&cache.serv_id)[3];
       dhcp_state = DHCP_STATE_REQUEST_SENT;
-      DHCP_DEBUG("REQUEST sent\r\n");
+#if DEBUG_AV
+	putpgmstring("REQUEST sent\r\n");
+#endif	
     break;
     default:
-      DHCP_DEBUG("Wrong DHCP msg type\r\n");
+#if DEBUG_AV
+	putpgmstring("Wrong DHCP msg type\r\n");
+#endif	
     break;
   }
 
@@ -298,7 +329,7 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
         if ( msg[ix] == 4 )
         {
           ix++;
-		  c->netmask = (unsigned long)msg[ix];
+		  c->netmask = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
@@ -311,7 +342,7 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
         if ( msg[ix] == 4 )
         {
           ix++;
-		  c->router_ip = (unsigned long)msg[ix];
+		  c->router_ip = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
@@ -324,16 +355,16 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
         if ( msg[ix] == 4 )
         {
           ix++;
-		  c->dns1_ip = (unsigned long)msg[ix];
+		  c->dns1_ip = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
         if ( msg[ix] == 8 )
         {
           ix++;
-		  c->dns1_ip = (unsigned long)msg[ix];
+		  c->dns1_ip = *((unsigned long *)(msg+ix));
           ix += 4;
- 		  c->dns2_ip = (unsigned long)msg[ix];
+ 		  c->dns2_ip = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
@@ -346,7 +377,7 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
         if ( msg[ix] == 4 )
         {
           ix++;
- 		  c->lease = (unsigned long)msg[ix];
+ 		  c->lease = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
@@ -385,7 +416,7 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
         if ( msg[ix] == 4 )
         {
           ix++;
- 		  c->serv_id = (unsigned long)msg[ix];
+ 		  c->serv_id = *((unsigned long *)(msg+ix));
           ix += 4;
         }
         else
@@ -399,7 +430,11 @@ void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int 
       case 0xff: //end option
       break;
       default: 
-        DHCP_DEBUG("Unknown Option: %2x\r\n", msg[ix]);
+#if DEBUG_AV
+	putpgmstring("Unknown Option: ");
+	puthexbyte(msg[ix]);
+	putpgmstring("\r\n");
+#endif	
         ix++;
         ix += (msg[ix]+1);
       break;
@@ -421,7 +456,9 @@ void dhcp_get (void)
   ip  = (struct IP_header *)&ethernetbuffer[IP_OFFSET];
   if ( htons(ip->IP_Totallenght) > MTU_SIZE )
   {
-    DHCP_DEBUG("DHCP too big, discarded\r\n");
+#if DEBUG_AV
+	putpgmstring("DHCP too big, discarded\r\n");
+#endif	
     return;
   }
 
@@ -435,12 +472,14 @@ void dhcp_get (void)
   msg = (struct dhcp_msg *)&ethernetbuffer[UDP_DATA_START];
 
   //check the id
-  if ( (msg->xid[0] != mlMAC[6]) ||
-       (msg->xid[1] != mlMAC[5]) ||
-       (msg->xid[2] != mlMAC[4]) ||
-       (msg->xid[3] != mlMAC[3])    )
+  if ( (msg->xid[0] != mlMAC[5]) ||
+       (msg->xid[1] != mlMAC[4]) ||
+       (msg->xid[2] != mlMAC[3]) ||
+       (msg->xid[3] != mlMAC[2])    )
   {
-//    DHCP_DEBUG("Wrong DHCP ID, discarded\r\n");
+#if DEBUG_AV
+	putpgmstring("Wrong DHCP ID, discarded\r\n");
+#endif	
     return;
   }
 
@@ -462,7 +501,9 @@ void dhcp_get (void)
       dhcp_parse_options(&msg->sname[0], &cache, 64);
     break;
     default: // must not occur
-      DHCP_DEBUG("Option 52 Error\r\n");
+#if DEBUG_AV
+	putpgmstring("Option 52 Error\r\n");
+#endif	
     break;
   }
 
@@ -470,19 +511,41 @@ void dhcp_get (void)
   {
     case DHCPOFFER:
       // this will be our IP address
-      mlIP = msg->yiaddr;
-	  mlNetmask = cache.netmask;
-	  mlGateway = cache.router_ip;
-	  mlDNSserver = cache.dns1_ip;
- //     DHCP_DEBUG("** DHCP OFFER RECVD! **\r\n");
+		if ( mlIP != msg->yiaddr)
+		{
+			mlIP = msg->yiaddr;
+			dhcp_res.btStat.bStatIP = 1;
+		}
+		if (mlNetmask != cache.netmask)
+		{
+			mlNetmask = cache.netmask;
+			dhcp_res.btStat.bStatNetmask= 1;
+		}
+		if (mlGateway != cache.router_ip)
+		{
+			mlGateway = cache.router_ip;
+			dhcp_res.btStat.bStatGateway= 1;
+		}
+		if (mlDNSserver != cache.dns1_ip)
+		{
+			mlDNSserver = cache.dns1_ip;
+			dhcp_res.btStat.bStatDNSserver= 1;
+		}
+#if DEBUG_AV
+	putpgmstring("** DHCP OFFER RECVD! **\r\n");
+#endif	
       dhcp_state = DHCP_STATE_OFFER_RCVD;
     break;
     case DHCPACK:
-      DHCP_DEBUG("** DHCP ACK RECVD! **\r\n");
+#if DEBUG_AV
+	putpgmstring("** DHCP ACK RECVD! **\r\n");
+#endif	
       dhcp_state = DHCP_STATE_ACK_RCVD;
     break;
     case DHCPNAK:
-      DHCP_DEBUG("** DHCP NAK RECVD! **\r\n");
+#if DEBUG_AV
+	putpgmstring("** DHCP NAK RECVD! **\r\n");
+#endif	
       dhcp_state = DHCP_STATE_NAK_RCVD;
     break;
   }

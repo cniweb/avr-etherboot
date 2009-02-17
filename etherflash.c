@@ -23,14 +23,12 @@
  */
 //@{
 
+#include <stdlib.h>
 #include <avr/io.h>
 #include <avr/wdt.h>
-//#include <avr/pgmspace.h>
-#include <stdlib.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/boot.h>
-
+#include <util/delay.h>
 
 #include "config.h"
 #include "eemem.h"
@@ -40,6 +38,10 @@
 #include "udp.h"
 #include "dhcpc.h"
 #include "etherflash.h"
+
+#if DEBUG_AV
+#include <avr/pgmspace.h>
+#endif
 
 //#define true (1==1)
 //#define false (!true)
@@ -51,7 +53,55 @@ uint32_t currentAddress;
 struct UDP_SOCKET sock;
 
 void initializeHardware (void);
-uint8_t hexToByte(uint8_t *buf, uint16_t idx);
+
+
+// Debugging
+#if DEBUG_AV
+
+void sendchar (unsigned char Zeichen)
+{
+	while (!(UCSRA & (1<<UDRE)));
+	UDR = Zeichen;
+}
+
+void puthexbyte(uint8_t bt)
+{
+	uint8_t btnibble = (bt >> 4) & 0x0f;
+	if (btnibble > 9)
+		btnibble += 'a'-10;
+	else
+		btnibble += '0';
+	sendchar(btnibble);
+
+	btnibble = bt & 0x0f;
+	if (btnibble > 9)
+		btnibble += 'a'-10;
+	else
+		btnibble += '0';
+	sendchar(btnibble);
+}
+
+void putstring (unsigned char *string)
+{
+	while (*string)
+	{ 
+		sendchar (*string);
+		string++;
+	}
+}
+
+void putPGMstring (const char *string)
+{
+	unsigned char c = 0;
+	do
+	{
+		c = pgm_read_byte(string);
+		sendchar (c);
+		string++;
+	} while (c!='\n');
+}
+#endif
+
 
 uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 {
@@ -76,14 +126,17 @@ uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 // interrupts have to be disabled when calling this function!
 void writeFLASHPage(uint32_t currentAddress)
 {
+	#if DEBUG_AV
+		putpgmstring("writeFLASHPage\r\n");
+	#else
+	    eeprom_busy_wait ();
 
-    eeprom_busy_wait ();
-
-    boot_page_erase (currentAddress-2);		// Clear flash page
-    boot_spm_busy_wait ();      			// Wait until the memory is erased.					
+	    boot_page_erase (currentAddress-2);		// Clear flash page
+	    boot_spm_busy_wait ();      			// Wait until the memory is erased.					
 	
-    boot_page_write (currentAddress-2);     // Store buffer in flash page.
-    boot_spm_busy_wait();       			// Wait until the memory is written.
+	    boot_page_write (currentAddress-2);     // Store buffer in flash page.
+	    boot_spm_busy_wait();       			// Wait until the memory is written.
+	#endif
 
     bytesInBootPage = 0;
 }
@@ -109,7 +162,11 @@ void processLineBuffer(uint8_t bytes)
 			// copy data to boot page
 			for (i=0; i<len; i+=2)
 			{
-                boot_page_fill_safe (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
+				#if DEBUG_AV
+					putpgmstring("boot_page_fill_safe\r\n");
+				#else
+				    boot_page_fill_safe (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
+				#endif
 				currentAddress += 2;
 				bytesInBootPage += 2;
 				if (bytesInBootPage == SPM_PAGESIZE)
@@ -199,24 +256,6 @@ void initializeHardware (void)
 	
 }
 
-// Debugging
-/*
-void sendchar (unsigned char Zeichen)
-{
-	while (!(UCSRA & (1<<UDRE)));
-	UDR = Zeichen;
-}
-
-void putstring (unsigned char *string)
-{
-	while (*string)
-	{ 
-		sendchar (*string);
-		string++;
-	}
-}
-*/
-
 int main(void)
 {
 	// disable interrupts
@@ -224,29 +263,42 @@ int main(void)
 	
 	initializeHardware();
 	
-/*
+#if DEBUG_AV
 	// Debugging über UART (Mega32)
 	//DDRD = (1<<PD1);
 	//PORTD = 0;
 	UCSRB = ( 1 << TXEN );							// UART TX einschalten
 	UCSRC |= ( 1 << URSEL )|( 3<<UCSZ0 );	        // Asynchron 8N1
 	UBRRH  = 0;                                   	// Highbyte ist 0
-	UBRRL  = 11; // 38400 Baud
+
+#define BAUD 38400L
+#define UBRR_VAL ((F_CPU+BAUD*8)/(BAUD*16)-1)
+	UBRRH = UBRR_VAL >> 8;
+	UBRRL = UBRR_VAL & 0xFF;
 	
-	sendchar(1);
-*/	
+	putpgmstring("Start\r\n");
+#endif	
 
 	// initialize ENC28J60
 	ETH_INIT();
-
+#if DEBUG_AV
+	putpgmstring("ETH_INIT\r\n");
+#endif
+	
+	ETH_PACKET_SEND(60,ethernetbuffer);
+	ETH_PACKET_SEND(60,ethernetbuffer);
 //  enc does not work without a break after init
-	for (uint8_t i=0;i<30;i++)
-		_delay_ms(35);
+//	for (uint8_t i=0;i<30;i++)
+//		_delay_ms(35);
 
 	// Clear receive buffer of ENC28J60
 	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
 
 	stack_init ();
+#if DEBUG_AV
+	putpgmstring("stack_init\r\n");
+#endif	
+
 
 	
 	
@@ -262,18 +314,15 @@ int main(void)
 	// send RRQ
 	uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
 	// get Requeststring from EEPROM to save FLASH
-	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, 12);
+	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
 	
 	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
-	UDP_SendPacket (12, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
+	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
 
 	while (1)
 	{
 
 		eth_packet_dispatcher();
-#if USE_DHCP
-		dhcp();	// check for end of lease
-#endif //USE_DHCP
 	
 		_delay_ms(2);
 
@@ -319,6 +368,10 @@ void tftp_get (void)
 				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
 				{
 					// newline
+#if DEBUG_AV
+	lineBuffer[sock.lineBufferIdx] = 0; // mark end of string
+	putstring(lineBuffer);
+#endif	
 					processLineBuffer(sock.lineBufferIdx);
 					sock.lineBufferIdx = 0;
 				}
@@ -337,19 +390,29 @@ void tftp_get (void)
 			// last packet is shorter than 516 bytes
 			if (sock.Bufferfill < 516)
 			{
+				UDP_UnRegisterSocket(sock.SourcePort);
 				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
  				// so we have to check if there is unwritten data in the buffer
 				if (bytesInBootPage > 0)
 				{
 					writeFLASHPage(currentAddress);        
 				}
+#if DEBUG_AV
+	putpgmstring("Done\r\n");
+#else
 				jumpToApplication();
+#endif	
 			}
 		}
 		else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
 		{
 			// error -> reboot to application
+			UDP_UnRegisterSocket(sock.SourcePort);
+#if DEBUG_AV
+	putpgmstring("error\r\n");
+#else
 			jumpToApplication();
+#endif	
 		}
 	}
 }

@@ -126,11 +126,11 @@ extern unsigned char ethernetbuffer[];
 
 void stack_init (void);
 
-void eth_packet_dispatcher(void);
+void eth_packet_dispatcher(void) SEC_BOOTLOADER;
 
-void Make_ETH_Header (unsigned char *buffer, unsigned long dest_ip);
+void Make_ETH_Header (unsigned char *buffer, unsigned long dest_ip) SEC_BOOTLOADER;
 
-void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip);
+void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip) SEC_BOOTLOADER;
 
 
 #endif
