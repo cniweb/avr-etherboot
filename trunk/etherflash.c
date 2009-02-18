@@ -51,6 +51,7 @@ uint32_t baseAddress;
 uint16_t bytesInBootPage;
 uint32_t currentAddress;
 struct UDP_SOCKET sock;
+uint16_t tftpTimeoutCounter;
 
 void initializeHardware (void)
 {
@@ -141,6 +142,7 @@ void BootLoaderMain(void)
 	baseAddress = 0;
 	bytesInBootPage = 0;
 	currentAddress = 0;
+	tftpTimeoutCounter = 0;
 	
 	sock.Bufferfill = 0;
 	sock.lineBufferIdx = 0;
@@ -155,16 +157,27 @@ void BootLoaderMain(void)
 	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
 	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
 
+#if DEBUG_AV
+	putpgmstring("TFTP RRQ sent\r\n");
+#endif	
+
 	while (1)
 	{
 
 		eth_packet_dispatcher();
 	
 		_delay_ms(2);
-
+		
+		if (tftpTimeoutCounter++ > TFTP_TIMEOUT)
+		{
+#if DEBUG_AV
+	putpgmstring("TFTP timeout\r\n");
+#endif	
+			jumpToApplication();
+		}
+		
 	}
 	
-	return(0);
 }
 
 
@@ -186,8 +199,11 @@ void tftp_get (void)
 	putpgmstring("tftp\r\n");
 #endif	
 
-	if (sock.Bufferfill == 0)
-	{
+	// Reset timeout counter
+	tftpTimeoutCounter = 0;
+
+	//if (sock.Bufferfill == 0)
+	//{
         arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
 		
 		sock.DestinationIP = IP_packet->IP_Srcaddr;
@@ -209,7 +225,7 @@ void tftp_get (void)
 		
 		// check for data packet (00 03)
 		//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
-		if (tftp->op == 0x0300)
+		if (tftp->op == TFTP_OP_DATA)
 		{	// this is a data packet
 			uint16_t rxBufferIdx = sock.DataStartOffset+4;
 			//uint16_t rxBufferIdx = 0;
@@ -230,7 +246,6 @@ void tftp_get (void)
 	putstring(lineBuffer);
 #endif	
 					processLineBuffer(sock.lineBufferIdx);
-									
 					sock.lineBufferIdx = 0;
 				}
 			}
@@ -264,17 +279,19 @@ void tftp_get (void)
 			}
 		}
 		//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
-		else if (tftp->op == 0x0500)
+		else if (tftp->op == TFTP_OP_ERR)
 		{
 			// error -> reboot to application
 			UDP_UnRegisterSocket(sock.SourcePort);
 #if DEBUG_AV
-	putpgmstring("error\r\n");
+	putpgmstring("TFTP error\r\n");
+	puthexbyte(tftp->errCode>>8);
+	puthexbyte(tftp->errCode);
 #else
 			jumpToApplication();
 #endif	
 		}
-	}
+	//}
 }
 
 
