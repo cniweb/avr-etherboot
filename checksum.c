@@ -33,6 +33,7 @@
 //@{
 
 #include <stdint.h>
+#include <avr/boot.h>
 #include "config.h"
 #include "checksum.h"
 #include "ethernet.h"

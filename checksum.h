@@ -11,7 +11,7 @@
 #ifndef __CHECKSUM_H__
 #define __CHECKSUM_H__
 	
-	uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght, unsigned long startval) SEC_BOOTLOADER;
+	uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght, unsigned long startval) BOOTLOADER_SECTION;
 
 #endif
 //@}

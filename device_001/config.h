@@ -2,6 +2,8 @@
 #define _CONFIG_H_
 
 #include <stdio.h>
+#include <avr/eeprom.h>
+#include <avr/boot.h>
 
 
 #define	MYMAC1 0x02
@@ -77,9 +79,6 @@
 #define MISO		ENC28J60_PIN_MISO
 #define MOSI		ENC28J60_PIN_MOSI
 #define SCK			ENC28J60_PIN_SCK
-
-
-#define SEC_BOOTLOADER __attribute__((section(".BootLoader")))
 
 /////////////////////////////// HELPERS ////////////////////////////////////////////
 //DO NOT CHANGE ANYTHING BELOW!

@@ -64,10 +64,10 @@ void UDP_SendPacket(unsigned int data_length,
 					unsigned int src_port, 
 					unsigned int dest_port, 
 					unsigned long dest_ip)
-		SEC_BOOTLOADER;
+		BOOTLOADER_SECTION;
 
-uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char)) SEC_BOOTLOADER;
-void UDP_UnRegisterSocket (unsigned int port) SEC_BOOTLOADER;
+uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char)) BOOTLOADER_SECTION;
+void UDP_UnRegisterSocket (unsigned int port) BOOTLOADER_SECTION;
 
 	
 

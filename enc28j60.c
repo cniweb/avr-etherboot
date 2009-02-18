@@ -18,6 +18,7 @@
 //*****************************************************************************
 #include <avr/io.h>
 #include <util/delay.h>
+#include "config.h"
 #include "eemem.h"
 #include "enc28j60.h"
 #include "spi.h"

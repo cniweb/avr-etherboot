@@ -52,55 +52,230 @@ uint16_t bytesInBootPage;
 uint32_t currentAddress;
 struct UDP_SOCKET sock;
 
-void initializeHardware (void);
+void initializeHardware (void)
+{
+	// reset hardware register
+	// disable TWI
+	TWCR &= ~(1<<TWIE);
+	// disable INT2
+	
+	
+#ifdef __AVR_ATmega32__
+	GICR &= ~(1<<INT2);
+#else
+	EIMSK = 0;
+#endif
 
+	DDRA = 0;
+	DDRB = 0;
+	DDRC = 0;
+	DDRD = 0;
+	PORTA = 0;
+	PORTB = 0;
+	PORTC = 0;
+	PORTD = 0;
+	// disable SPI
+	SPCR &= ~(1<<SPE);
+	
+}
 
-// Debugging
+int main(void)
+{
+	// disable interrupts
+	cli();
+	
+	initializeHardware();
+	
 #if DEBUG_AV
+	// Debugging über UART (Mega32)
+	//DDRD = (1<<PD1);
+	//PORTD = 0;
+	UCSRB = ( 1 << TXEN );							// UART TX einschalten
+	UCSRC |= ( 1 << URSEL )|( 3<<UCSZ0 );	        // Asynchron 8N1
+	UBRRH  = 0;                                   	// Highbyte ist 0
 
-void sendchar (unsigned char Zeichen)
-{
-	while (!(UCSRA & (1<<UDRE)));
-	UDR = Zeichen;
+#define BAUD 38400L
+#define UBRR_VAL ((F_CPU+BAUD*8)/(BAUD*16)-1)
+	UBRRH = UBRR_VAL >> 8;
+	UBRRL = UBRR_VAL & 0xFF;
+	
+	putpgmstring("Start\r\n");
+#endif	
+
+	// initialize ENC28J60
+	ETH_INIT();
+#if DEBUG_AV
+	putpgmstring("ETH_INIT\r\n");
+#endif
+	
+	ETH_PACKET_SEND(60,ethernetbuffer);
+	ETH_PACKET_SEND(60,ethernetbuffer);
+
+	// Clear receive buffer of ENC28J60
+	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
+
+	stack_init ();
+#if DEBUG_AV
+	putpgmstring("stack_init\r\n");
+#endif	
+
+
+// at this point we should have a valid IP-Address and be ready
+// to execute our Application or to start the boot loader
+
+// do something here to make a decision where to go
+	
+// for now, we're just jumping to the boot loader
+	BootLoaderMain();	// pBootloader();
+	
+// this call will never return. BootLoader will reset device when done
+
+	return(0);
 }
 
-void puthexbyte(uint8_t bt)
-{
-	uint8_t btnibble = (bt >> 4) & 0x0f;
-	if (btnibble > 9)
-		btnibble += 'a'-10;
-	else
-		btnibble += '0';
-	sendchar(btnibble);
 
-	btnibble = bt & 0x0f;
-	if (btnibble > 9)
-		btnibble += 'a'-10;
-	else
-		btnibble += '0';
-	sendchar(btnibble);
+
+void BootLoaderMain(void)
+{
+	// init global vars
+	baseAddress = 0;
+	bytesInBootPage = 0;
+	currentAddress = 0;
+	
+	sock.Bufferfill = 0;
+	sock.lineBufferIdx = 0;
+	sock.SourcePort = ~TFTP_SERVER_PORT;
+
+	// send RRQ
+	uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+	// get Requeststring from EEPROM to save FLASH
+	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
+	
+	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
+	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
+	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
+
+	while (1)
+	{
+
+		eth_packet_dispatcher();
+	
+		_delay_ms(2);
+
+	}
+	
+	return(0);
 }
 
-void putstring (unsigned char *string)
+
+void tftp_get (void)
 {
-	while (*string)
-	{ 
-		sendchar (*string);
-		string++;
+	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
+	ETH_packet = (struct ETH_header *) ethernetbuffer;
+	struct IP_header * IP_packet;		// IP_struct anlegen
+	IP_packet = ( struct IP_header *) &ethernetbuffer[IP_OFFSET];
+	struct UDP_header * UDP_packet;
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+	//UDP_packet = ( struct UDP_header *) &ethernetbuffer[UDP_OFFSET];
+	
+	uint8_t lastPacket = 0;
+
+	struct TFTP_RESPONSE *tftp;
+
+#if DEBUG_AV
+	putpgmstring("tftp\r\n");
+#endif	
+
+	if (sock.Bufferfill == 0)
+	{
+        arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
+		
+		sock.DestinationIP = IP_packet->IP_Srcaddr;
+
+		// Größe der Daten eintragen
+		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
+
+		// last packet is shorter than 516 bytes
+		if (sock.Bufferfill < 516)
+			lastPacket = 1;
+		
+		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
+		sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
+
+		// Offset für UDP-Daten im Ethernetfrane berechnen
+		tftp = (struct TFTP_RESPONSE *)&ethernetbuffer[UDP_DATA_START];
+		
+		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
+		
+		// check for data packet (00 03)
+		//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+		if (tftp->op == 0x0300)
+		{	// this is a data packet
+			uint16_t rxBufferIdx = sock.DataStartOffset+4;
+			//uint16_t rxBufferIdx = 0;
+			// copy current line till newline character or end of rx buf
+			while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
+			//while ((rxBufferIdx) < (sock.Bufferfill-4))
+			{
+
+				// copy next byte from rx buf to line buf
+				//lineBuffer[sock.lineBufferIdx++] = tftp->data[rxBufferIdx++]; 
+				lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
+				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
+				//if (tftp->data[rxBufferIdx-1] == 0x0A)
+				{
+					// newline
+#if DEBUG_AV
+	lineBuffer[sock.lineBufferIdx] = 0; // mark end of string
+	putstring(lineBuffer);
+#endif	
+					processLineBuffer(sock.lineBufferIdx);
+									
+					sock.lineBufferIdx = 0;
+				}
+			}
+			
+			// rx buf processed
+			// send ack and wait for next packet
+			//uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+			//uint8_t *udpSendBuffer = &ethernetbuffer[UDP_DATA_START];
+			//udpSendBuffer[0]  = 0x00;
+			//udpSendBuffer[1]  = 0x04; //TFTP_ACK
+			tftp->op = 0x0400;
+
+			// mark buffer free
+			sock.Bufferfill = 0;
+			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
+			
+			if (lastPacket)
+			{
+				UDP_UnRegisterSocket(sock.SourcePort);
+				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
+ 				// so we have to check if there is unwritten data in the buffer
+				if (bytesInBootPage > 0)
+				{
+					writeFLASHPage(currentAddress);        
+				}
+#if DEBUG_AV
+	putpgmstring("Done\r\n");
+#else
+				jumpToApplication();
+#endif	
+			}
+		}
+		//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
+		else if (tftp->op == 0x0500)
+		{
+			// error -> reboot to application
+			UDP_UnRegisterSocket(sock.SourcePort);
+#if DEBUG_AV
+	putpgmstring("error\r\n");
+#else
+			jumpToApplication();
+#endif	
+		}
 	}
 }
-
-void putPGMstring (const char *string)
-{
-	unsigned char c = 0;
-	do
-	{
-		c = pgm_read_byte(string);
-		sendchar (c);
-		string++;
-	} while (c!='\n');
-}
-#endif
 
 
 uint8_t hexToByte(uint8_t *buf, uint16_t idx)
@@ -229,210 +404,50 @@ void jumpToApplication(void)
 }
 
 
-void initializeHardware (void)
-{
-	// reset hardware register
-	// disable TWI
-	TWCR &= ~(1<<TWIE);
-	// disable INT2
-	
-	
-#ifdef __AVR_ATmega32__
-	GICR &= ~(1<<INT2);
-#else
-	EIMSK = 0;
-#endif
+// Debugging
+#if DEBUG_AV
 
-	DDRA = 0;
-	DDRB = 0;
-	DDRC = 0;
-	DDRD = 0;
-	PORTA = 0;
-	PORTB = 0;
-	PORTC = 0;
-	PORTD = 0;
-	// disable SPI
-	SPCR &= ~(1<<SPE);
-	
+void sendchar (unsigned char Zeichen)
+{
+	while (!(UCSRA & (1<<UDRE)));
+	UDR = Zeichen;
 }
 
-int main(void)
+void puthexbyte(uint8_t bt)
 {
-	// disable interrupts
-	cli();
-	
-	initializeHardware();
-	
-#if DEBUG_AV
-	// Debugging über UART (Mega32)
-	//DDRD = (1<<PD1);
-	//PORTD = 0;
-	UCSRB = ( 1 << TXEN );							// UART TX einschalten
-	UCSRC |= ( 1 << URSEL )|( 3<<UCSZ0 );	        // Asynchron 8N1
-	UBRRH  = 0;                                   	// Highbyte ist 0
+	uint8_t btnibble = (bt >> 4) & 0x0f;
+	if (btnibble > 9)
+		btnibble += 'a'-10;
+	else
+		btnibble += '0';
+	sendchar(btnibble);
 
-#define BAUD 38400L
-#define UBRR_VAL ((F_CPU+BAUD*8)/(BAUD*16)-1)
-	UBRRH = UBRR_VAL >> 8;
-	UBRRL = UBRR_VAL & 0xFF;
-	
-	putpgmstring("Start\r\n");
-#endif	
-
-	// initialize ENC28J60
-	ETH_INIT();
-#if DEBUG_AV
-	putpgmstring("ETH_INIT\r\n");
-#endif
-	
-	ETH_PACKET_SEND(60,ethernetbuffer);
-	ETH_PACKET_SEND(60,ethernetbuffer);
-
-	// Clear receive buffer of ENC28J60
-	while (ETH_PACKET_RECEIVE (MTU_SIZE, ethernetbuffer) != 0 ) {};
-
-	stack_init ();
-#if DEBUG_AV
-	putpgmstring("stack_init\r\n");
-#endif	
-
-
-	
-	
-	// init global vars
-	baseAddress = 0;
-	bytesInBootPage = 0;
-	currentAddress = 0;
-	
-	sock.Bufferfill = 0;
-	sock.lineBufferIdx = 0;
-	sock.SourcePort = ~TFTP_SERVER_PORT;
-
-	// send RRQ
-	uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
-	// get Requeststring from EEPROM to save FLASH
-	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
-	
-	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
-	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
-	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
-
-	while (1)
-	{
-
-		eth_packet_dispatcher();
-	
-		_delay_ms(2);
-
-	}
-	
-	return(0);
+	btnibble = bt & 0x0f;
+	if (btnibble > 9)
+		btnibble += 'a'-10;
+	else
+		btnibble += '0';
+	sendchar(btnibble);
 }
 
-
-void tftp_get (void)
+void putstring (unsigned char *string)
 {
-	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
-	ETH_packet = (struct ETH_header *) ethernetbuffer;
-	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer[IP_OFFSET];
-	struct UDP_header * UDP_packet;
-	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
-	//UDP_packet = ( struct UDP_header *) &ethernetbuffer[UDP_OFFSET];
-	
-	uint8_t lastPacket = 0;
-
-	struct TFTP_RESPONSE *tftp;
-
-	putpgmstring("tftp\r\n");
-
-	if (sock.Bufferfill == 0)
-	{
-        arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
-		
-		sock.DestinationIP = IP_packet->IP_Srcaddr;
-
-		// Größe der Daten eintragen
-		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
-
-		// last packet is shorter than 516 bytes
-		if (sock.Bufferfill < 516)
-			lastPacket = 1;
-		
-		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
-		sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
-
-		// Offset für UDP-Daten im Ethernetfrane berechnen
-		tftp = (struct TFTP_RESPONSE *)&ethernetbuffer[UDP_DATA_START];
-		
-		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
-		
-		// check for data packet (00 03)
-		//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
-		if (tftp->op == 0x0300)
-		{	// this is a data packet
-			uint16_t rxBufferIdx = sock.DataStartOffset+4;
-			//uint16_t rxBufferIdx = 0;
-			// copy current line till newline character or end of rx buf
-			while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
-			//while ((rxBufferIdx) < (sock.Bufferfill-4))
-			{
-
-				// copy next byte from rx buf to line buf
-				//lineBuffer[sock.lineBufferIdx++] = tftp->data[rxBufferIdx++]; 
-				lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
-				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
-				//if (tftp->data[rxBufferIdx-1] == 0x0A)
-				{
-					// newline
-#if DEBUG_AV
-	lineBuffer[sock.lineBufferIdx] = 0; // mark end of string
-	putstring(lineBuffer);
-#endif	
-					processLineBuffer(sock.lineBufferIdx);
-									
-					sock.lineBufferIdx = 0;
-				}
-			}
-			
-			// rx buf processed
-			// send ack and wait for next packet
-			//uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
-			//uint8_t *udpSendBuffer = &ethernetbuffer[UDP_DATA_START];
-			//udpSendBuffer[0]  = 0x00;
-			//udpSendBuffer[1]  = 0x04; //TFTP_ACK
-			tftp->op = 0x0400;
-
-			// mark buffer free
-			sock.Bufferfill = 0;
-			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
-			
-			if (lastPacket)
-			{
-				UDP_UnRegisterSocket(sock.SourcePort);
-				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
- 				// so we have to check if there is unwritten data in the buffer
-				if (bytesInBootPage > 0)
-				{
-					writeFLASHPage(currentAddress);        
-				}
-#if DEBUG_AV
-	putpgmstring("Done\r\n");
-#else
-				jumpToApplication();
-#endif	
-			}
-		}
-		//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
-		else if (tftp->op == 0x0500)
-		{
-			// error -> reboot to application
-			UDP_UnRegisterSocket(sock.SourcePort);
-#if DEBUG_AV
-	putpgmstring("error\r\n");
-#else
-			jumpToApplication();
-#endif	
-		}
+	while (*string)
+	{ 
+		sendchar (*string);
+		string++;
 	}
 }
+
+void putPGMstring (const char *string)
+{
+	unsigned char c = 0;
+	do
+	{
+		c = pgm_read_byte(string);
+		sendchar (c);
+		string++;
+	} while (c!='\n');
+}
+#endif
+
