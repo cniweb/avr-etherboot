@@ -28,6 +28,12 @@ struct TFTP_RESPONSE
 	};
 };
 
+#define TFTP_OP_DATA 0x0300
+#define TFTP_OP_ERR  0x0500
+
+#define TFTP_TIMEOUT 2500 // ca. 5 seconds
+
+int main(void) BOOTLOADER_SECTION;
 void BootLoaderMain(void) BOOTLOADER_SECTION;
 void tftp_get (void) BOOTLOADER_SECTION;
 uint8_t hexToByte(uint8_t *buf, uint16_t idx) BOOTLOADER_SECTION;

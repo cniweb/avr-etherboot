@@ -1,5 +1,5 @@
 #include "config.h"
-
+#include "eemem.h"
 
 unsigned long EEMEM mlIpEEP = IP(192,168,2,131);
 unsigned long EEMEM mlNetmaskEEP = IP(255,255,255,0);
