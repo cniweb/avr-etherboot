@@ -8,12 +8,12 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include "config.h"
+#include "eemem.h"
 #include "ethernet.h"
 #include "checksum.h"
 #include "arp.h"
 #include "enc28j60.h"
 #include "udp.h"
-#include "eemem.h"
 #if USE_DHCP
 #include "dhcpc.h"
 #endif //USE_DHCP
@@ -75,6 +75,8 @@ void eth_packet_dispatcher(void)
 		ETH_packet = (struct ETH_header *) ethernetbuffer;
 		switch ( ETH_packet->ETH_typefield ) // welcher type ist gesetzt
 		{
+			// to do: put arp in bootloader section or ignore arp packets
+			// while bootloader is running
 			case 0x0608:
 				arp_reply ();
 				break;

@@ -12,9 +12,6 @@
 	
 	#define __EEMEM_H__
 
-#include <avr/eeprom.h>
-#include "config.h"
-
 
 extern unsigned long EEMEM mlIpEEP;
 extern unsigned long EEMEM mlNetmaskEEP;

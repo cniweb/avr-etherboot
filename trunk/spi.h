@@ -23,8 +23,8 @@
 	
 	#include <avr/io.h>
 
-	void SPI_init (void) SEC_BOOTLOADER;
-	unsigned char SPI_ReadWrite (unsigned char Data) SEC_BOOTLOADER;
+	void SPI_init (void) BOOTLOADER_SECTION;
+	unsigned char SPI_ReadWrite (unsigned char Data) BOOTLOADER_SECTION;
 
 	#define SPI_NOT_INIT	0x00
 	#define SPI_HALF_SPEED	0x01

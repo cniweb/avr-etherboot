@@ -257,23 +257,23 @@
 // setup ports for I/O
 
 //! do a ENC28J60 read operation
-unsigned char enc28j60ReadOp( unsigned char op,  unsigned char address) SEC_BOOTLOADER;
+unsigned char enc28j60ReadOp( unsigned char op,  unsigned char address) BOOTLOADER_SECTION;
 //! do a ENC28J60 write operation
-void enc28j60WriteOp( unsigned char op,  unsigned char address,  unsigned char data) SEC_BOOTLOADER;
+void enc28j60WriteOp( unsigned char op,  unsigned char address,  unsigned char data) BOOTLOADER_SECTION;
 //! read the packet buffer memory
-void enc28j60ReadBuffer( unsigned int len,  unsigned char* data) SEC_BOOTLOADER;
+void enc28j60ReadBuffer( unsigned int len,  unsigned char* data) BOOTLOADER_SECTION;
 //! write the packet buffer memory
-void enc28j60WriteBuffer( unsigned int len,  unsigned char* data) SEC_BOOTLOADER;
+void enc28j60WriteBuffer( unsigned int len,  unsigned char* data) BOOTLOADER_SECTION;
 //! set the register bank for register at address
-void enc28j60SetBank( unsigned char address) SEC_BOOTLOADER;
+void enc28j60SetBank( unsigned char address) BOOTLOADER_SECTION;
 //! read ax88796 register
-unsigned char enc28j60Read( unsigned char address) SEC_BOOTLOADER;
+unsigned char enc28j60Read( unsigned char address) BOOTLOADER_SECTION;
 //! write ax88796 register
-void enc28j60Write( unsigned char address, unsigned char data) SEC_BOOTLOADER;
+void enc28j60Write( unsigned char address, unsigned char data) BOOTLOADER_SECTION;
 //! read a PHY register
-unsigned int enc28j60PhyRead( unsigned char address) SEC_BOOTLOADER;
+unsigned int enc28j60PhyRead( unsigned char address) BOOTLOADER_SECTION;
 //! write a PHY register
-void enc28j60PhyWrite( unsigned char address,  unsigned int data) SEC_BOOTLOADER;
+void enc28j60PhyWrite( unsigned char address,  unsigned int data) BOOTLOADER_SECTION;
 
 //! initialize the ethernet interface for transmit/receive
 void enc28j60Init(void);
@@ -282,7 +282,7 @@ void enc28j60Init(void);
 /// Sends a packet on the network.  It is assumed that the packet is headed by a valid ethernet header.
 /// \param len		Length of packet in bytes.
 /// \param packet	Pointer to packet data.
-void enc28j60PacketSend(unsigned int len, unsigned char* packet) SEC_BOOTLOADER;
+void enc28j60PacketSend(unsigned int len, unsigned char* packet) BOOTLOADER_SECTION;
 
 //! Packet receive function.
 /// Gets a packet from the network receive buffer, if one is available.
@@ -290,9 +290,9 @@ void enc28j60PacketSend(unsigned int len, unsigned char* packet) SEC_BOOTLOADER;
 /// \param	maxlen	The maximum acceptable length of a retrieved packet.
 /// \param	packet	Pointer where packet data should be stored.
 /// \return Packet length in bytes if a packet was retrieved, zero otherwise.
-unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet) SEC_BOOTLOADER;
+unsigned int enc28j60PacketReceive(unsigned int maxlen, unsigned char* packet) BOOTLOADER_SECTION;
 
-unsigned int enc28j60PacketReceiveLenght( void ) SEC_BOOTLOADER;
+unsigned int enc28j60PacketReceiveLenght( void ) BOOTLOADER_SECTION;
 
 #endif
 //@}

@@ -28,11 +28,12 @@ struct TFTP_RESPONSE
 	};
 };
 
-void tftp_get (void) SEC_BOOTLOADER;
-uint8_t hexToByte(uint8_t *buf, uint16_t idx) SEC_BOOTLOADER;
-void writeFLASHPage(uint32_t currentAddress) SEC_BOOTLOADER;
-void processLineBuffer(uint8_t bytes) SEC_BOOTLOADER;
-void jumpToApplication(void) SEC_BOOTLOADER;
+void BootLoaderMain(void) BOOTLOADER_SECTION;
+void tftp_get (void) BOOTLOADER_SECTION;
+uint8_t hexToByte(uint8_t *buf, uint16_t idx) BOOTLOADER_SECTION;
+void writeFLASHPage(uint32_t currentAddress) BOOTLOADER_SECTION;
+void processLineBuffer(uint8_t bytes) BOOTLOADER_SECTION;
+void jumpToApplication(void) BOOTLOADER_SECTION;
 
 
 

@@ -273,11 +273,12 @@ EXTMEMOPTS =
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
 #LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
-LDFLAGS = -Wl,--section-start=.BootLoader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+LDFLAGS = -Wl,--section-start=.bootloader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
+LDFLAGS += -T ../eth-avr5.x
 #LDFLAGS += -T linker_script.x
 
 #
