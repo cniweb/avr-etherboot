@@ -185,10 +185,11 @@ unsigned char dhcp (void)
  //       DHCP_DEBUG("LEASE %2x%2x%2x%2x\r\n", cache.lease[0],cache.lease[1],cache.lease[2],cache.lease[3]);
 #if DEBUG_AV
 	putpgmstring("DHCP DHCP_STATE_ACK_RCVD\r\n");
-	puthexbyte(mlIP>>24);
-	puthexbyte(mlIP>>16);
-	puthexbyte(mlIP>>8);
 	puthexbyte(mlIP>>0);
+	puthexbyte(mlIP>>8);
+	puthexbyte(mlIP>>16);
+	puthexbyte(mlIP>>24);
+	putpgmstring("\r\n");
 #endif	
         dhcp_lease = cache.lease;
 		// write to eeprom only if data has changed, we don't want to wear it out
@@ -467,7 +468,7 @@ void dhcp_get (void)
   struct IP_header *ip;
   unsigned char *p;
 
-  ip  = (struct IP_header *)&ethernetbuffer[IP_OFFSET];
+  ip  = (struct IP_header *)&ethernetbuffer[ETH_HDR_LEN];
   if ( htons(ip->IP_Totallenght) > MTU_SIZE )
   {
 #if DEBUG_AV

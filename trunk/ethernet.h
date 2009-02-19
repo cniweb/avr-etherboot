@@ -41,25 +41,25 @@
 #define	PROT_TCP				0x06	//zeigt an die Nutzlasten enthalten das TCP Prot.
 #define	PROT_UDP				0x11	//zeigt an die Nutzlasten enthalten das UDP Prot.	
 
-#define ETH_HDR_LEN 			14
-#define ARP_HDR_LEN 			28
-#define IP_HDR_LEN 				20
-#define TCP_HDR_LEN 			20
-#define UDP_HDR_LEN				8
-#define TCP_DATA_START			(IP_HDR_LEN + TCP_HDR_LEN + ETH_HDR_LEN)
-#define UDP_DATA_START			(IP_HDR_LEN + UDP_HDR_LEN + ETH_HDR_LEN)
+#define ETH_HDR_LEN 			0x0e	// = 14
+#define ARP_HDR_LEN 			0x1c	// = 28
+#define IP_HDR_LEN 				0x14	// = 20
+#define TCP_HDR_LEN 			0x14	// = 20
+#define UDP_HDR_LEN				0x08	// = 8
+#define TCP_DATA_START			(ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN)
+#define UDP_DATA_START			(ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN)
 
-#define ETHER_OFFSET			0x00
-#define ARP_OFFSET				0x0E
-#define IP_OFFSET				0x0E
-#define UDP_OFFSET				0x22
+//#define ETHER_OFFSET			0x00
+//#define ARP_OFFSET				0x0E
+//#define IP_OFFSET				0x0E
+//#define UDP_OFFSET				0x22
 
 #define ARP_REPLY_LEN			60
 #define ARP_REQUEST_LEN			42
 #define ARP_MAX_ENTRY_TIME 		100 //100sec.
 
-#define MAX_UDP_ENTRY	5		// max possible number of udp connections at a time
-#define MAX_ARP_ENTRY	5
+#define MAX_UDP_ENTRY			5		// max possible number of udp connections at a time
+#define MAX_ARP_ENTRY			5
 	
 #define TFTP_SERVER_PORT		69
 
