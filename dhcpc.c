@@ -326,6 +326,8 @@ void get4bytes (unsigned char *source, unsigned char *target)
 //----------------------------------------------------------------------------
 //read all the options
 //pointer to the variables and size from options to packet end
+void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int size) APP_SECTION_DHCP;
+
 void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int size)
 {
   unsigned int ix;

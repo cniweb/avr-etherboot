@@ -49,8 +49,14 @@
 #F_CPU = 16000000
 
 # atmega32
+#MCU = atmega644
 MCU = atmega32
-BOOTLOADER_START = 0x7000 # byteadresse!
+
+BOOTLOADER_START = 0x7000 # ATMega32 2048 word bootloader (byteadresse!)
+APP_SECTION_ENC = 0x6a00 # ATMega32 Test
+APP_SECTION_DHCP = 0x6000 # ATMega32 Test
+FUNC_TABLE = 0x7fe6
+#BOOTLOADER_START = 0xF000 # ATMega644 2048 Word Bootloader (byteadresse!)
 F_CPU =  7372800
 
 
@@ -270,13 +276,17 @@ EXTMEMOPTS =
 #  -Wl,...:     tell GCC to pass this to linker.
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
-#LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
-LDFLAGS = -Wl,--section-start=.bootloader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+#LDFLAGS = -Wl,--section-start=.bootloader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+#LDFLAGS += -Wl,--section-start=.vectors=$(VECTORS_START)
+LDFLAGS += -Wl,--section-start=.app_section_enc=$(APP_SECTION_ENC)
+LDFLAGS += -Wl,--section-start=.app_section_dhcp=$(APP_SECTION_DHCP)
+LDFLAGS += -Wl,--section-start=.func_table=$(FUNC_TABLE)
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
-LDFLAGS += -T ../eth-avr5.x
+#LDFLAGS += -T ../eth-avr5.x
 #LDFLAGS += -T linker_script.x
 
 #

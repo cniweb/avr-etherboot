@@ -22,6 +22,8 @@
 #include "eemem.h"
 #include "enc28j60.h"
 #include "spi.h"
+#include "functable.h"
+#include <avr/pgmspace.h>
 
 #if USE_ENC28J60
 
@@ -321,9 +323,8 @@ void enc28j60PacketSend(unsigned int len, unsigned char* packet)
 //
 //*********************************************************************************************************
 
-/*
 unsigned int enc28j60PacketReceiveLenght( void )
-	{
+{
 	unsigned int len;
 
 	enc28j60Write(ERDPTL, (NextPacketPtr));
@@ -334,8 +335,8 @@ unsigned int enc28j60PacketReceiveLenght( void )
 	len |= enc28j60ReadOp(ENC28J60_READ_BUF_MEM, 0)<<8;
 	
 	return( len );
-	}
-*/
+}
+
 
 //*********************************************************************************************************
 //
