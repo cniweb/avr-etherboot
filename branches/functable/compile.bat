@@ -1,10 +1,10 @@
 mkdir fw_bootloader
-rem cd device_001
-rem make clean
-rem make 
-rem cp device_001.hex ../fw_bootloader
-rem cp device_001.eep ../fw_bootloader
-rem cd ..
+cd device_001
+make clean
+make 
+cp device_001.hex ../fw_bootloader
+cp device_001.eep ../fw_bootloader
+cd ..
 cd device_002
 make clean
 make

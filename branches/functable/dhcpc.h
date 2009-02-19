@@ -36,10 +36,10 @@
 	#define DHCP_SERVER_PORT		  67
 
 
-void dhcp_init     (void);
-void dhcp_message  (unsigned char type);
-void dhcp_get      (void);
-unsigned char dhcp (void);
+void dhcp_init     (void) APP_SECTION_DHCP;
+void dhcp_message  (unsigned char type) APP_SECTION_DHCP;
+void dhcp_get      (void) APP_SECTION_DHCP;
+unsigned char dhcp (void) APP_SECTION_DHCP;
 
 #endif //_DHCPCLIENT_H
 #endif //USE_DHCP

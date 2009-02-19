@@ -5,6 +5,11 @@
 #include <avr/eeprom.h>
 #include <avr/boot.h>
 
+#undef BOOTLOADER_SECTION
+#define BOOTLOADER_SECTION
+#define APP_SECTION_ENC __attribute__ ((section (".app_section_enc")))
+#define APP_SECTION_DHCP __attribute__ ((section (".app_section_dhcp")))
+
 #define	MYMAC1 0x02
 #define	MYMAC2 0x01
 #define	MYMAC3 0x02
@@ -46,7 +51,9 @@
 
 // ATMEGA32
 	
-#define USE_DHCP		1
+#define USE_DHCP		0
+
+#define DEBUG_AV		1
 	
 //-> enc28j60
 #define USE_ENC28J60	1
@@ -114,7 +121,6 @@
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
 
-#define DEBUG_AV	1
 
 // Debugging
 #if DEBUG_AV
