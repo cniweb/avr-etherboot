@@ -82,6 +82,7 @@ void initializeHardware (void)
 
 int main(void)
 {
+
 	// disable interrupts
 	cli();
 	
@@ -100,6 +101,8 @@ int main(void)
 	UBRRH = UBRR_VAL >> 8;
 	UBRRL = UBRR_VAL & 0xFF;
 	
+	putpgmstring("\r\n");
+	putpgmstring("***********************\r\n");
 	putpgmstring("Start\r\n");
 #endif	
 
@@ -117,7 +120,7 @@ int main(void)
 
 	stack_init ();
 #if DEBUG_AV
-	putpgmstring("stack_init\r\n");
+	putpgmstring("stack_init done\r\n");
 #endif	
 
 
@@ -138,13 +141,17 @@ int main(void)
 
 void BootLoaderMain(void)
 {
+	uint8_t nRetryCounter = 0;
+
 	// init global vars
 	baseAddress = 0;
 	bytesInBootPage = 0;
 	currentAddress = 0;
 	tftpTimeoutCounter = 0;
 	
+	sock.DestinationIP = 0;
 	sock.Bufferfill = 0;
+	sock.BlockNumber = 0;
 	sock.lineBufferIdx = 0;
 	sock.SourcePort = ~TFTP_SERVER_PORT;
 
@@ -173,7 +180,20 @@ void BootLoaderMain(void)
 #if DEBUG_AV
 	putpgmstring("TFTP timeout\r\n");
 #endif	
-			jumpToApplication();
+			if ((sock.DestinationIP != 0) && (nRetryCounter++ < 4))
+			{	// ok, we had contact to a server, may be it was
+				// the first contact to discover the ip.
+				// Try again, but not unlimited
+				tftpTimeoutCounter = 0;
+				eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
+				UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, sock.DestinationIP);
+			}
+			else
+#if DEBUG_AV
+	tftpTimeoutCounter = 0;	// stay in this loop, do nothing
+#else
+				jumpToApplication();
+#endif	
 		}
 		
 	}
@@ -186,14 +206,15 @@ void tftp_get (void)
 	struct ETH_header * ETH_packet; 		// ETH_struct anlegen
 	ETH_packet = (struct ETH_header *) ethernetbuffer;
 	struct IP_header * IP_packet;		// IP_struct anlegen
-	IP_packet = ( struct IP_header *) &ethernetbuffer[IP_OFFSET];
+	IP_packet = ( struct IP_header *) &ethernetbuffer[ETH_HDR_LEN];
 	struct UDP_header * UDP_packet;
 	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 	//UDP_packet = ( struct UDP_header *) &ethernetbuffer[UDP_OFFSET];
-	
+	struct TFTP_RESPONSE *tftp;
+	tftp = (struct TFTP_RESPONSE *)&ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN];
+
 	uint8_t lastPacket = 0;
 
-	struct TFTP_RESPONSE *tftp;
 
 #if DEBUG_AV
 	putpgmstring("tftp\r\n");
@@ -202,96 +223,135 @@ void tftp_get (void)
 	// Reset timeout counter
 	tftpTimeoutCounter = 0;
 
-	//if (sock.Bufferfill == 0)
-	//{
-        arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
-		
-		sock.DestinationIP = IP_packet->IP_Srcaddr;
-
-		// Größe der Daten eintragen
-		sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
-
-		// last packet is shorter than 516 bytes
-		if (sock.Bufferfill < 516)
-			lastPacket = 1;
-		
-		// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
-		sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
-
-		// Offset für UDP-Daten im Ethernetfrane berechnen
-		tftp = (struct TFTP_RESPONSE *)&ethernetbuffer[UDP_DATA_START];
-		
-		sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
-		
-		// check for data packet (00 03)
-		//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+	if (sock.DestinationIP == 0)
+	{	// ok, this is the first answer from this TFTP-Server
+		// lets see, if it wants to deliver the file we requested
 		if (tftp->op == TFTP_OP_DATA)
-		{	// this is a data packet
-			uint16_t rxBufferIdx = sock.DataStartOffset+4;
-			//uint16_t rxBufferIdx = 0;
-			// copy current line till newline character or end of rx buf
-			while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
-			//while ((rxBufferIdx) < (sock.Bufferfill-4))
-			{
+		{	// ok, we want to use this server
+			// the problem is, that some TFTP-Server will not
+			// understand our ACK packet because we used a
+			// broadcast to find them. So we save the IP here,
+			// diconnect from the TFTP-Server and after a while
+			// connect again with the saved IP.
+			sock.DestinationIP = IP_packet->IP_Srcaddr;
 
-				// copy next byte from rx buf to line buf
-				//lineBuffer[sock.lineBufferIdx++] = tftp->data[rxBufferIdx++]; 
-				lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
-				if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
-				//if (tftp->data[rxBufferIdx-1] == 0x0A)
-				{
-					// newline
+			// don't listen to this port anymore, we got what we want
+			UDP_UnRegisterSocket(sock.SourcePort--);
+			// register a new port
+			UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
+		}
+		// say bye to any server - wether it delivers data or not
+	    arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
+		// send Error
+		uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+		// get Errorstring from EEPROM to save FLASH
+		eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPErrStr, TFTPErrStrSize);
+		UDP_SendPacket (TFTPErrStrSize, sock.SourcePort, htons(UDP_packet->UDP_SourcePort), IP_packet->IP_Srcaddr);
+		return;
+	}
+	
+	if (sock.DestinationIP != IP_packet->IP_Srcaddr)
+	{	// other TFTP-Server is sending data - ignore it.
+#if DEBUG_AV
+	putpgmstring("Ignoring packet from wrong server\r\n");
+#endif	
+		return;
+	}
+
+	if ((sock.BlockNumber + 1) != htons(tftp->blockNumber))
+	{	// this is not the block number we expect - ignore it.
+#if DEBUG_AV
+	putpgmstring("Ignoring packet with wrong packet number\r\n");
+#endif	
+		return;
+	}
+
+	// set current block number
+	sock.BlockNumber = htons(tftp->blockNumber);
+
+	// Größe der Daten eintragen
+	sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
+
+	// last packet is shorter than 516 bytes
+	if (sock.Bufferfill < 516)
+		lastPacket = 1;
+	
+	// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
+	sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
+
+	// Offset für UDP-Daten im Ethernetfrane berechnen
+	
+	sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
+	
+	// check for data packet (00 03)
+	//if (ethernetbuffer[sock.DataStartOffset+1] == 0x03)
+	if (tftp->op == TFTP_OP_DATA)
+	{	// this is a data packet
+		uint16_t rxBufferIdx = sock.DataStartOffset+4;
+		//uint16_t rxBufferIdx = 0;
+		// copy current line till newline character or end of rx buf
+		while ((rxBufferIdx - sock.DataStartOffset) < sock.Bufferfill)
+		//while ((rxBufferIdx) < (sock.Bufferfill-4))
+		{
+
+			// copy next byte from rx buf to line buf
+			//lineBuffer[sock.lineBufferIdx++] = tftp->data[rxBufferIdx++]; 
+			lineBuffer[sock.lineBufferIdx++] = ethernetbuffer[rxBufferIdx++];
+			if (ethernetbuffer[rxBufferIdx-1] == 0x0A)
+			//if (tftp->data[rxBufferIdx-1] == 0x0A)
+			{
+				// newline
 #if DEBUG_AV
 	lineBuffer[sock.lineBufferIdx] = 0; // mark end of string
 	putstring(lineBuffer);
 #endif	
-					processLineBuffer(sock.lineBufferIdx);
-					sock.lineBufferIdx = 0;
-				}
-			}
-			
-			// rx buf processed
-			// send ack and wait for next packet
-			//uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
-			//uint8_t *udpSendBuffer = &ethernetbuffer[UDP_DATA_START];
-			//udpSendBuffer[0]  = 0x00;
-			//udpSendBuffer[1]  = 0x04; //TFTP_ACK
-			tftp->op = 0x0400;
-
-			// mark buffer free
-			sock.Bufferfill = 0;
-			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
-			
-			if (lastPacket)
-			{
-				UDP_UnRegisterSocket(sock.SourcePort);
-				// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
- 				// so we have to check if there is unwritten data in the buffer
-				if (bytesInBootPage > 0)
-				{
-					writeFLASHPage(currentAddress);        
-				}
-#if DEBUG_AV
-	putpgmstring("Done\r\n");
-#else
-				jumpToApplication();
-#endif	
+				processLineBuffer(sock.lineBufferIdx);
+				sock.lineBufferIdx = 0;
 			}
 		}
-		//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
-		else if (tftp->op == TFTP_OP_ERR)
+		
+		// rx buf processed
+		// send ack and wait for next packet
+		//uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+		//uint8_t *udpSendBuffer = &ethernetbuffer[UDP_DATA_START];
+		//udpSendBuffer[0]  = 0x00;
+		//udpSendBuffer[1]  = 0x04; //TFTP_ACK
+		tftp->op = 0x0400;
+
+		// mark buffer free
+		sock.Bufferfill = 0;
+		UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
+		
+		if (lastPacket)
 		{
-			// error -> reboot to application
 			UDP_UnRegisterSocket(sock.SourcePort);
+			// sometimes the hexfile doesn't end with a 0x01 Record (End Of File)
+				// so we have to check if there is unwritten data in the buffer
+			if (bytesInBootPage > 0)
+			{
+				writeFLASHPage(currentAddress);        
+			}
 #if DEBUG_AV
-	putpgmstring("TFTP error\r\n");
-	puthexbyte(tftp->errCode>>8);
-	puthexbyte(tftp->errCode);
+	putpgmstring("Done\r\n");
 #else
 			jumpToApplication();
 #endif	
 		}
-	//}
+	}
+	//else if (ethernetbuffer[sock.DataStartOffset+1] == 5)
+	else if (tftp->op == TFTP_OP_ERR)
+	{
+		// error -> reboot to application
+#if DEBUG_AV
+	putpgmstring("TFTP error\r\n");
+	puthexbyte(tftp->errCode>>8);
+	puthexbyte(tftp->errCode);
+	putpgmstring("\r\n");
+#else
+		UDP_UnRegisterSocket(sock.SourcePort);
+		jumpToApplication();
+#endif	
+	}
 }
 
 

@@ -17,8 +17,26 @@ extern unsigned long EEMEM mlIpEEP;
 extern unsigned long EEMEM mlNetmaskEEP;
 extern unsigned long EEMEM mlGatewayEEP;
 extern unsigned long EEMEM mlDNSserverEEP;
-#define TFTPReqStrSize	16
-extern unsigned char EEMEM maTFTPReqStr[TFTPReqStrSize];
+
+typedef struct 
+{
+	unsigned short opcode;
+	unsigned char fnandmode[];
+} TFTPREQ;
+extern TFTPREQ maTFTPReqStr EEMEM;
+#define TFTPReqStrSize 		16		// stupid compiler does not want to calculate 
+									// sizeof(maTFTPReqStr), has to be done by hand 
+
+typedef struct 
+{
+	unsigned short opcode;
+	unsigned short errcode;
+	unsigned char errstring[];
+} TFTPERR;
+extern TFTPERR maTFTPErrStr EEMEM;
+#define TFTPErrStrSize 		34		// stupid compiler does not want to calculate 
+									// sizeof(maTFTPErrStr), has to be done by hand 
+
 
 #if USE_ENC28J60	
 extern unsigned char EEMEM enc28j60_config[];

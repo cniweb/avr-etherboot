@@ -117,14 +117,14 @@ void Make_ETH_Header (unsigned char *buffer, unsigned long dest_ip)
 void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip)
 {
     unsigned int result16;  //Checksum
-    struct ETH_header *ethernet;
+    struct ETH_header *ETH_packet;
     struct IP_header       *ip;
 
-    ethernet = (struct ETH_header *)&buffer[ETHER_OFFSET];
-    ip       = (struct IP_header *)&buffer[IP_OFFSET];
+    ETH_packet = (struct ETH_header *)buffer;
+    ip       = (struct IP_header *)&buffer[ETH_HDR_LEN];
 
     Make_ETH_Header (buffer, dest_ip);         //Erzeugt einen neuen Ethernetheader
-    ethernet->ETH_typefield = 0x0008;	// htons(0x0800) Nutzlast 0x0800=IP
+    ETH_packet->ETH_typefield = 0x0008;	// htons(0x0800) Nutzlast 0x0800=IP
 
     IP_id_counter++;
 

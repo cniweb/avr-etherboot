@@ -6,7 +6,13 @@ unsigned long EEMEM mlNetmaskEEP = IP(255,255,255,0);
 unsigned long EEMEM mlGatewayEEP = IP(192,168,2,2);
 unsigned long EEMEM mlDNSserverEEP = IP(192,168,2,2); //0x0302a8c0;
 
-unsigned char EEMEM maTFTPReqStr[TFTPReqStrSize] = {0x00, 0x01, 't', 's', 't', '.', 'h', 'e', 'x', 0x00, 'o', 'c', 't', 'e', 't', 0x00};
+//************
+// remember to update TFTPReqStrSize in eemem.h if you ever change this
+TFTPREQ maTFTPReqStr EEMEM = {0x0100, "tst.hex\0octet"};
+//************
+// remember to update TFTPErrStrSize in eemem.h if you ever change this
+TFTPERR maTFTPErrStr EEMEM = {0x0500, 0x0500, "Sorry, wasn't talking to you!"};
+
 
 #if USE_ENC28J60	
 #include "enc28j60.h"
