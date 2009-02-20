@@ -62,13 +62,15 @@ void udp_init(void)
 /* -----------------------------------------------------------------------------------------------------------*/
 void udp (void)
 {
+	struct IP_header * IP_packet;		// IP_struct anlegen
+	IP_packet = ( struct IP_header *) &ethernetbuffer[ETH_HDR_LEN];
+	struct UDP_header * UDP_packet;
+	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
+
 	unsigned char port_index = 0;	
-	struct UDP_header *udp;
-    
-	udp = (struct UDP_header *)&ethernetbuffer[UDP_OFFSET];
 
 	//UDP DestPort mit Portanwendungsliste durchführen
-	while (UDP_PORT_TABLE[port_index].port && UDP_PORT_TABLE[port_index].port!=(htons(udp->UDP_DestinationPort)))
+	while (UDP_PORT_TABLE[port_index].port && UDP_PORT_TABLE[port_index].port!=htons(UDP_packet->UDP_DestinationPort))
 	{ 
 		port_index++;
 	}
@@ -76,8 +78,9 @@ void udp (void)
 	// Wenn index zu gross, dann beenden keine vorhandene Anwendung für den Port
 	if (!UDP_PORT_TABLE[port_index].port)
 	{ 
-		//Keine vorhandene Anwendung eingetragen! (ENDE)
-		// DEBUG("UDP Keine Anwendung gefunden!\r\n");
+#if DEBUG_AV
+		putpgmstring("No funktion for this packet found - discarded\r\n");
+#endif	
 		return;
 	}
 
@@ -139,8 +142,8 @@ void UDP_SendPacket(unsigned int  data_length,
     struct UDP_header *udp;
     struct IP_header  *ip;
 
-    udp = (struct UDP_header *)&ethernetbuffer[UDP_OFFSET];
-    ip  = (struct IP_header  *)&ethernetbuffer[IP_OFFSET];
+    udp = (struct UDP_header *)&ethernetbuffer[ETH_HDR_LEN + IP_HDR_LEN];
+    ip  = (struct IP_header  *)&ethernetbuffer[ETH_HDR_LEN];
   
     udp->UDP_SourcePort  = htons(src_port);
     udp->UDP_DestinationPort = htons(dest_port);

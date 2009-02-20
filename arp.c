@@ -41,8 +41,8 @@ void arp_reply (void)
 	struct ETH_header *ETH_packet;
 	struct ARP_header *ARP_packet;
 
-	ETH_packet = (struct ETH_header *)&ethernetbuffer[ETHER_OFFSET];
-	ARP_packet      = (struct ARP_header *)&ethernetbuffer[ARP_OFFSET];
+	ETH_packet = (struct ETH_header *)ethernetbuffer;
+	ARP_packet      = (struct ARP_header *)&ethernetbuffer[ETH_HDR_LEN];
 	
     if(ARP_packet->ARP_destIP == mlIP) // Für uns?
     {
@@ -103,6 +103,15 @@ void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac)
 			}
 			ARPtable[i].IP   = sourceIP;
 			ARPtable[i].time = ARP_MAX_ENTRY_TIME;
+#if DEBUG_AV && DEBUG_ARP
+	putpgmstring("arp_entry_add\r\n");
+	puthexbyte(sourceIP>>0);
+	puthexbyte(sourceIP>>8);
+	puthexbyte(sourceIP>>16);
+	puthexbyte(sourceIP>>24);
+	putpgmstring("\r\n");
+#endif
+			return;
         }
     }
     return;
@@ -113,6 +122,14 @@ void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac)
 //Diese Routine sucht anhand der IP den ARP eintrag
 unsigned char *arp_entry_search (unsigned long dest_ip)
 {
+#if DEBUG_AV && DEBUG_ARP
+	putpgmstring("arp_entry_search\r\n");
+	puthexbyte(dest_ip>>0);
+	puthexbyte(dest_ip>>8);
+	puthexbyte(dest_ip>>16);
+	puthexbyte(dest_ip>>24);
+	putpgmstring("\r\n");
+#endif	
 	for (uint8_t i = 0; i < MAX_ARP_ENTRY; i++)
 	{
 		if(ARPtable[i].IP == dest_ip)
@@ -120,5 +137,8 @@ unsigned char *arp_entry_search (unsigned long dest_ip)
 			return ARPtable[i].MAC;
 		}
 	}
+#if DEBUG_AV && DEBUG_ARP
+	putpgmstring("arp_entry_search - FAILED\r\n");
+#endif	
 	return NULL;
 }

@@ -48,7 +48,7 @@ struct dhcp_msg
 								//		BOUND, RENEW or REBINDING state and can respond
 								//		to ARP requests.
   unsigned long yiaddr;			//20	'your' (client) IP address.
-  unsigned char siaddr[4];		//24	IP address of next server to use in bootstrap;
+  unsigned long siaddr;			//24	IP address of next server to use in bootstrap;
 								//		returned in DHCPOFFER, DHCPACK by server.
   unsigned char giaddr[4];		//28	Relay agent IP address, used in booting via a
 								//		relay agent.
@@ -71,15 +71,6 @@ struct dhcp_cache
   unsigned long netmask;
   unsigned long lease;
   unsigned long serv_id;
-};
-
-struct DHCP_RESULT_STAT
-{
-	unsigned bStatIP:1;
-	unsigned bStatNetmask:1;
-	unsigned bStatGateway:1;
-	unsigned bStatDNSserver:1;
-	unsigned bUnused:4;
 };
 
 
@@ -107,11 +98,6 @@ unsigned char dhcp_state;
 struct dhcp_cache cache; 
 volatile unsigned long dhcp_lease;
 volatile unsigned char dhcp_timer;
-volatile union
-{
-	struct DHCP_RESULT_STAT btStat;
-	uint8_t nStat;
-} dhcp_res;
 
 //----------------------------------------------------------------------------
 //Init of DHCP client port
@@ -185,10 +171,11 @@ unsigned char dhcp (void)
  //       DHCP_DEBUG("LEASE %2x%2x%2x%2x\r\n", cache.lease[0],cache.lease[1],cache.lease[2],cache.lease[3]);
 #if DEBUG_AV
 	putpgmstring("DHCP DHCP_STATE_ACK_RCVD\r\n");
-	puthexbyte(mlIP>>24);
-	puthexbyte(mlIP>>16);
-	puthexbyte(mlIP>>8);
 	puthexbyte(mlIP>>0);
+	puthexbyte(mlIP>>8);
+	puthexbyte(mlIP>>16);
+	puthexbyte(mlIP>>24);
+	putpgmstring("\r\n");
 #endif	
         dhcp_lease = cache.lease;
 		// write to eeprom only if data has changed, we don't want to wear it out
@@ -469,7 +456,7 @@ void dhcp_get (void)
   struct IP_header *ip;
   unsigned char *p;
 
-  ip  = (struct IP_header *)&ethernetbuffer[IP_OFFSET];
+  ip  = (struct IP_header *)&ethernetbuffer[ETH_HDR_LEN];
   if ( htons(ip->IP_Totallenght) > MTU_SIZE )
   {
 #if DEBUG_AV
@@ -556,6 +543,31 @@ void dhcp_get (void)
 			mlDNSserver = cache.dns1_ip;
 			dhcp_res.btStat.bStatDNSserver= 1;
 		}
+#if DHCP_PARSE_TFTP_PARAMS		
+		if (msg->siaddr)
+		{
+			mlTFTPip = msg->siaddr;
+			dhcp_res.btStat.bStatTFTPserver = 1;
+		}
+		if (msg->file[0])
+		{
+			unsigned char *f;
+			uint8_t i;
+			f = msg->file;
+			i = 0;
+			while (*f && i<(TFTP_FILENAME_SIZE-1))
+			{
+				msTFTPfileName[i++] = *(f++);
+			}
+			msTFTPfileName[i] = 0;
+			dhcp_res.btStat.bStatTFTPfileName = 1;
+#if DEBUG_AV
+	putstring(msTFTPfileName);
+	putpgmstring(" <- TFTP filename received\r\n");
+#endif				
+		}
+#endif
+
 #if DEBUG_AV
 	putpgmstring("** DHCP OFFER RECVD! **\r\n");
 #endif	
