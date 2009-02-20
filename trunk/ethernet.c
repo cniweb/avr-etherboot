@@ -25,6 +25,8 @@ unsigned long mlGateway;
 unsigned long mlDNSserver;
 unsigned char mlMAC[6];
 unsigned char ethernetbuffer[MTU_SIZE];
+unsigned long mlTFTPip;
+unsigned char msTFTPfileName[TFTP_FILENAME_SIZE];
 
 unsigned int IP_id_counter;
 
