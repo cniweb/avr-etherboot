@@ -137,6 +137,61 @@ int main(void)
 	return(0);
 }
 
+void sendTFTPrequest(void)
+{
+	
+	uint8_t *udpSendBuffer;
+	uint8_t reqSize;
+	
+	udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
+	
+	#if DHCP_PARSE_TFTP_PARAMS
+		uint8_t *file;
+		
+		//if (dhcp_res.btStat.bStatTFTPfileName)
+		//{
+			
+			file = msTFTPfileName;
+			reqSize = 0;
+			*udpSendBuffer++ = 0x00; *udpSendBuffer++ = 0x01;
+			while (*file)
+			{
+				*udpSendBuffer++ = *file++;
+				reqSize++;
+			}
+			*udpSendBuffer++ = 0x00;
+			*udpSendBuffer++ = 'o';
+			*udpSendBuffer++ = 'c';
+			*udpSendBuffer++ = 't';
+			*udpSendBuffer++ = 'e';
+			*udpSendBuffer++ = 't';
+			*udpSendBuffer++ = 0x00;
+			reqSize += 9;
+		//}
+		//else
+		//{
+		//	reqSize = TFTPReqStrSize;
+		//	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
+		//}
+		//if (!dhcp_res.btStat.bStatTFTPserver)
+		//	mlTFTPip = CALC_BROADCAST_ADDR(mlIP, mlNetmask);
+	#else
+		// get Requeststring from EEPROM to save FLASH
+		eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
+		reqSize = TFTPReqStrSize;
+		if (!mlTFTPip)
+			mlTFTPip = CALC_BROADCAST_ADDR(mlIP, mlNetmask);
+	#endif
+
+	UDP_SendPacket (reqSize, sock.SourcePort, TFTP_SERVER_PORT, mlTFTPip);		
+
+	
+	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
+#if DEBUG_AV && DEBUG_TFTP
+	putpgmstring("TFTP RRQ sent\r\n");
+#endif	
+
+}
 
 
 void BootLoaderMain(void)
@@ -155,18 +210,10 @@ void BootLoaderMain(void)
 	sock.lineBufferIdx = 0;
 	sock.SourcePort = ~TFTP_SERVER_PORT;
 
-	// send RRQ
-	uint8_t *udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
-	// get Requeststring from EEPROM to save FLASH
-	eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
-	
+	// send initial TFTP RRQ
 	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
-	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
-	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
-#if DEBUG_AV && DEBUG_TFTP
-	putpgmstring("TFTP RRQ sent\r\n");
-#endif	
-
+	sendTFTPrequest();
+	
 	while (1)
 	{
 
@@ -184,13 +231,7 @@ void BootLoaderMain(void)
 				// the first contact to discover the ip.
 				// Try again, but not unlimited
 				tftpTimeoutCounter = 0;
-				eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
-				//UDP_UnRegisterSocket(sock.SourcePort--);
-				//UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
-				UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, sock.DestinationIP);
-#if DEBUG_AV && DEBUG_TFTP
-	putpgmstring("TFTP RRQ sent\r\n");
-#endif	
+				sendTFTPrequest();
 			}
 			else
 #if DEBUG_AV
@@ -228,7 +269,11 @@ void tftp_get (void)
 	tftpTimeoutCounter = 0;
 
 	if (sock.DestinationIP == 0)
-	{	// ok, this is the first answer from this TFTP-Server
+	{
+	#if DHCP_PARSE_TFTP_PARAMS
+			sock.DestinationIP = IP_packet->IP_Srcaddr;
+	#else
+		// ok, this is the first answer from this TFTP-Server
 		// lets see, if it wants to deliver the file we requested
 		if (tftp->op == TFTP_OP_DATA)
 		{	// ok, we want to use this server
@@ -238,7 +283,8 @@ void tftp_get (void)
 			// diconnect from the TFTP-Server and after a while
 			// connect again with the saved IP.
 			sock.DestinationIP = IP_packet->IP_Srcaddr;
-
+			mlTFTPip = IP_packet->IP_Srcaddr;
+			
 			// don't listen to this port anymore, we got what we want
 			UDP_UnRegisterSocket(sock.SourcePort--);
 			// register a new port
@@ -256,6 +302,7 @@ void tftp_get (void)
 #endif	
 		
 		return;
+	#endif
 	}
 	
 	if (sock.DestinationIP != IP_packet->IP_Srcaddr)
@@ -265,7 +312,6 @@ void tftp_get (void)
 #endif	
 		return;
 	}
-
 
 	// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
 	sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);

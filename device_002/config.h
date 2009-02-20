@@ -46,7 +46,8 @@
 
 // ATMEGA32
 	
-#define USE_DHCP		1
+#define USE_DHCP				1
+#define DHCP_PARSE_TFTP_PARAMS	1
 	
 //-> enc28j60
 #define USE_ENC28J60	1

@@ -116,6 +116,7 @@ struct IP_header	{
 };
 
 
+#define TFTP_FILENAME_SIZE 20
 
 extern unsigned long mlIP;
 extern unsigned long mlNetmask;
@@ -123,6 +124,8 @@ extern unsigned long mlGateway;
 extern unsigned long mlDNSserver;
 extern unsigned char mlMAC[];
 extern unsigned char ethernetbuffer[];
+extern unsigned long mlTFTPip;
+extern unsigned char msTFTPfileName[TFTP_FILENAME_SIZE];
 
 void stack_init (void);
 

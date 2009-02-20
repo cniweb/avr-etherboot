@@ -35,6 +35,23 @@
 	#define DHCP_CLIENT_PORT		  68
 	#define DHCP_SERVER_PORT		  67
 
+struct DHCP_RESULT_STAT
+{
+	unsigned bStatIP:1;
+	unsigned bStatNetmask:1;
+	unsigned bStatGateway:1;
+	unsigned bStatDNSserver:1;
+	unsigned bStatTFTPserver:1;
+	unsigned bStatTFTPfileName:1;
+	unsigned bUnused:2;
+};
+
+volatile union
+{
+	struct DHCP_RESULT_STAT btStat;
+	uint8_t nStat;
+} dhcp_res;
+
 
 void dhcp_init     (void);
 void dhcp_message  (unsigned char type);
