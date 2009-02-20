@@ -163,8 +163,7 @@ void BootLoaderMain(void)
 	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
 	UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, CALC_BROADCAST_ADDR(mlIP, mlNetmask));
 	//UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, IP(192,168,2,24));
-
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_TFTP
 	putpgmstring("TFTP RRQ sent\r\n");
 #endif	
 
@@ -177,7 +176,7 @@ void BootLoaderMain(void)
 		
 		if (tftpTimeoutCounter++ > TFTP_TIMEOUT)
 		{
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_TFTP
 	putpgmstring("TFTP timeout\r\n");
 #endif	
 			if ((sock.DestinationIP != 0) && (nRetryCounter++ < 4))
@@ -186,7 +185,12 @@ void BootLoaderMain(void)
 				// Try again, but not unlimited
 				tftpTimeoutCounter = 0;
 				eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
+				//UDP_UnRegisterSocket(sock.SourcePort--);
+				//UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
 				UDP_SendPacket (TFTPReqStrSize, sock.SourcePort, TFTP_SERVER_PORT, sock.DestinationIP);
+#if DEBUG_AV && DEBUG_TFTP
+	putpgmstring("TFTP RRQ sent\r\n");
+#endif	
 			}
 			else
 #if DEBUG_AV
@@ -216,8 +220,8 @@ void tftp_get (void)
 	uint8_t lastPacket = 0;
 
 
-#if DEBUG_AV
-	putpgmstring("tftp\r\n");
+#if DEBUG_AV && DEBUG_TFTP
+	putpgmstring("tftp_get()\r\n");
 #endif	
 
 	// Reset timeout counter
@@ -247,21 +251,48 @@ void tftp_get (void)
 		// get Errorstring from EEPROM to save FLASH
 		eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPErrStr, TFTPErrStrSize);
 		UDP_SendPacket (TFTPErrStrSize, sock.SourcePort, htons(UDP_packet->UDP_SourcePort), IP_packet->IP_Srcaddr);
+#if DEBUG_AV && DEBUG_TFTP
+	putpgmstring("TFTP ERR sent\r\n");
+#endif	
+		
 		return;
 	}
 	
 	if (sock.DestinationIP != IP_packet->IP_Srcaddr)
 	{	// other TFTP-Server is sending data - ignore it.
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_TFTP
 	putpgmstring("Ignoring packet from wrong server\r\n");
 #endif	
 		return;
 	}
 
+
+	// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
+	sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
+
 	if ((sock.BlockNumber + 1) != htons(tftp->blockNumber))
-	{	// this is not the block number we expect - ignore it.
-#if DEBUG_AV
-	putpgmstring("Ignoring packet with wrong packet number\r\n");
+	{
+		// this block is not expected
+		if (htons(tftp->blockNumber) == (sock.BlockNumber))
+		{
+			// this block is the last block processed -> send ACK again (UDP is unreliable)
+			tftp->op = 0x0400;
+			// mark buffer free
+			sock.Bufferfill = 0;
+#if DEBUG_AV && DEBUG_TFTP
+	puthexbyte(sock.BlockNumber>>8);
+	puthexbyte(sock.BlockNumber);
+	putpgmstring(" send block ACK again\r\n");
+#endif		
+			UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
+		}
+#if DEBUG_AV && DEBUG_TFTP
+		else
+		{
+			puthexbyte(tftp->blockNumber);
+			puthexbyte(tftp->blockNumber>>8);
+			putpgmstring("Ignoring packet with wrong block number\r\n");
+		}
 #endif	
 		return;
 	}
@@ -269,15 +300,19 @@ void tftp_get (void)
 	// set current block number
 	sock.BlockNumber = htons(tftp->blockNumber);
 
+
+#if DEBUG_AV && DEBUG_TFTP
+	puthexbyte(sock.BlockNumber>>8);
+	puthexbyte(sock.BlockNumber);
+	putpgmstring(" block processing\r\n");
+#endif	
+
 	// Größe der Daten eintragen
 	sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
 
 	// last packet is shorter than 516 bytes
 	if (sock.Bufferfill < 516)
 		lastPacket = 1;
-	
-	// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
-	sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
 
 	// Offset für UDP-Daten im Ethernetfrane berechnen
 	
@@ -301,7 +336,7 @@ void tftp_get (void)
 			//if (tftp->data[rxBufferIdx-1] == 0x0A)
 			{
 				// newline
-#if DEBUG_AV
+#if DEBUG_AV && #DEBUG_FLASH_PROG
 	lineBuffer[sock.lineBufferIdx] = 0; // mark end of string
 	putstring(lineBuffer);
 #endif	
@@ -320,6 +355,11 @@ void tftp_get (void)
 
 		// mark buffer free
 		sock.Bufferfill = 0;
+#if DEBUG_AV && DEBUG_TFTP
+	puthexbyte(tftp->blockNumber);
+	puthexbyte(tftp->blockNumber>>8);
+	putpgmstring(" block ACK sending\r\n");
+#endif			
 		UDP_SendPacket (4, sock.SourcePort, sock.DestinationPort, sock.DestinationIP);
 		
 		if (lastPacket)
@@ -332,7 +372,9 @@ void tftp_get (void)
 				writeFLASHPage(currentAddress);        
 			}
 #if DEBUG_AV
-	putpgmstring("Done\r\n");
+	#if DEBUG_TFTP
+		putpgmstring("TFTP Done\r\n");
+	#endif
 #else
 			jumpToApplication();
 #endif	
@@ -343,10 +385,12 @@ void tftp_get (void)
 	{
 		// error -> reboot to application
 #if DEBUG_AV
-	putpgmstring("TFTP error\r\n");
-	puthexbyte(tftp->errCode>>8);
-	puthexbyte(tftp->errCode);
-	putpgmstring("\r\n");
+	#if DEBUG_TFTP
+		putpgmstring("TFTP error\r\n");
+		puthexbyte(tftp->errCode>>8);
+		puthexbyte(tftp->errCode);
+		putpgmstring("\r\n");
+	#endif
 #else
 		UDP_UnRegisterSocket(sock.SourcePort);
 		jumpToApplication();
@@ -379,7 +423,9 @@ uint8_t hexToByte(uint8_t *buf, uint16_t idx)
 void writeFLASHPage(uint32_t currentAddress)
 {
 	#if DEBUG_AV
+		#if DEBUG_FLASH_PROG
 		putpgmstring("writeFLASHPage\r\n");
+		#endif
 	#else
 	    eeprom_busy_wait ();
 
@@ -415,7 +461,9 @@ void processLineBuffer(uint8_t bytes)
 			for (i=0; i<len; i+=2)
 			{
 				#if DEBUG_AV
+					#if DEBUG_FLASH_PROG
 					putpgmstring("boot_page_fill_safe\r\n");
+					#endif
 				#else
 				    boot_page_fill_safe (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
 				#endif

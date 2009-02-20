@@ -103,7 +103,7 @@ void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac)
 			}
 			ARPtable[i].IP   = sourceIP;
 			ARPtable[i].time = ARP_MAX_ENTRY_TIME;
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ARP
 	putpgmstring("arp_entry_add\r\n");
 	puthexbyte(sourceIP>>0);
 	puthexbyte(sourceIP>>8);
@@ -122,7 +122,7 @@ void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac)
 //Diese Routine sucht anhand der IP den ARP eintrag
 unsigned char *arp_entry_search (unsigned long dest_ip)
 {
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ARP
 	putpgmstring("arp_entry_search\r\n");
 	puthexbyte(dest_ip>>0);
 	puthexbyte(dest_ip>>8);
@@ -137,7 +137,7 @@ unsigned char *arp_entry_search (unsigned long dest_ip)
 			return ARPtable[i].MAC;
 		}
 	}
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ARP
 	putpgmstring("arp_entry_search - FAILED\r\n");
 #endif	
 	return NULL;
