@@ -79,7 +79,7 @@ void enc28j60WriteOp( unsigned char op, unsigned char address,  unsigned char da
 //*********************************************************************************************************
 void enc28j60ReadBuffer(unsigned int len, unsigned char * data)
 {
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 	putpgmstring("enc28j60ReadBuffer start\r\n");
 #endif	
 	// assert CS
@@ -92,7 +92,7 @@ void enc28j60ReadBuffer(unsigned int len, unsigned char * data)
 	{
 		// read data
 		*data++ = SPI_ReadWrite( 0x00 );
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 		puthexbyte(*(data-1));
 #endif
 	}
@@ -100,7 +100,7 @@ void enc28j60ReadBuffer(unsigned int len, unsigned char * data)
 	// release CS
 
 	ENC28J60_CONTROL_PORT |= (1<<ENC28J60_PIN_CS);
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 	putpgmstring("\r\n");
 	putpgmstring("enc28j60ReadBuffer end\r\n");
 #endif	
@@ -113,7 +113,7 @@ void enc28j60ReadBuffer(unsigned int len, unsigned char * data)
 //*********************************************************************************************************
 void enc28j60WriteBuffer(unsigned int len, unsigned char * data)
 {
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 	putpgmstring("enc28j60WriteBuffer start\r\n");
 #endif	
 	// assert CS
@@ -124,7 +124,7 @@ void enc28j60WriteBuffer(unsigned int len, unsigned char * data)
 
 	while(len--)
 	{
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 		puthexbyte(*data);
 #endif
 		// write data
@@ -132,7 +132,7 @@ void enc28j60WriteBuffer(unsigned int len, unsigned char * data)
 	}
 	// release CS
 	ENC28J60_CONTROL_PORT |= (1<<ENC28J60_PIN_CS);
-#if DEBUG_AV
+#if DEBUG_AV && DEBUG_ENC_BUFFER_DATA
 	putpgmstring("\r\n");
 	putpgmstring("enc28j60WriteBuffer end\r\n");
 #endif	
