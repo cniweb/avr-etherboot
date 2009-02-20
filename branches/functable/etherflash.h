@@ -5,10 +5,11 @@
 
 struct UDP_SOCKET {
 	unsigned long DestinationIP;
-	unsigned int SourcePort;
-	unsigned int DestinationPort;
-	unsigned int Bufferfill;
-	unsigned int DataStartOffset;
+	uint16_t SourcePort;
+	uint16_t DestinationPort;
+	uint16_t Bufferfill;
+	uint16_t DataStartOffset;
+	uint16_t BlockNumber;
 	uint8_t lineBufferIdx;
 };
 
@@ -31,7 +32,7 @@ struct TFTP_RESPONSE
 #define TFTP_OP_DATA 0x0300
 #define TFTP_OP_ERR  0x0500
 
-#define TFTP_TIMEOUT 2500 // ca. 5 seconds
+#define TFTP_TIMEOUT F_CPU / 3000 // ca. 5 seconds
 
 int main(void) BOOTLOADER_SECTION;
 void BootLoaderMain(void) BOOTLOADER_SECTION;

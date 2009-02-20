@@ -51,7 +51,8 @@
 
 // ATMEGA32
 
-#define USE_DHCP		1
+#define USE_DHCP				1
+#define DHCP_PARSE_TFTP_PARAMS	0
 
 #define DEBUG_AV		0
 	
@@ -121,6 +122,13 @@
 
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
+
+
+#define DEBUG_AV				1
+#define DEBUG_ENC_BUFFER_DATA	0
+#define DEBUG_FLASH_PROG		0
+#define DEBUG_TFTP				1
+#define DEBUG_ARP				0
 
 
 // Debugging
