@@ -23,7 +23,7 @@
 	typedef struct
 	{
 		unsigned int port;		// Port
-		void(*fp)(unsigned char);  	// Zeiger auf auszuführende Funktion
+		void(*fp)(void);  	// Zeiger auf auszuführende Funktion
 	} UDP_PORT_ITEM;
 
 	/*!\struct UDP_header
@@ -66,7 +66,7 @@ void UDP_SendPacket(unsigned int data_length,
 					unsigned long dest_ip)
 		BOOTLOADER_SECTION;
 
-uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char)) BOOTLOADER_SECTION;
+uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(void)) BOOTLOADER_SECTION;
 void UDP_UnRegisterSocket (unsigned int port) BOOTLOADER_SECTION;
 
 	

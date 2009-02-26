@@ -145,7 +145,7 @@ void sendTFTPrequest(void)
 	
 	udpSendBuffer = ethernetbuffer + (ETH_HDR_LEN + IP_HDR_LEN + UDP_HDR_LEN);
 	
-	#if DHCP_PARSE_TFTP_PARAMS
+	#ifdef DHCP_PARSE_TFTP_PARAMS
 		uint8_t *file;
 		
 		//if (dhcp_res.btStat.bStatTFTPfileName)
@@ -179,8 +179,15 @@ void sendTFTPrequest(void)
 		// get Requeststring from EEPROM to save FLASH
 		eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPReqStr, TFTPReqStrSize);
 		reqSize = TFTPReqStrSize;
-		if (!mlTFTPip)
-			mlTFTPip = CALC_BROADCAST_ADDR(mlIP, mlNetmask);
+
+		#ifdef FIXED_TFTP_SRV
+			eeprom_read_block ((void*)&mlTFTPip, (const void*)&mlTFTPipEEP, 4);
+			sock.DestinationIP = mlTFTPip;
+		#else
+			if (!mlTFTPip)
+				mlTFTPip = CALC_BROADCAST_ADDR(mlIP, mlNetmask);
+		#endif
+
 	#endif
 
 	UDP_SendPacket (reqSize, sock.SourcePort, TFTP_SERVER_PORT, mlTFTPip);		
@@ -211,7 +218,7 @@ void BootLoaderMain(void)
 	sock.SourcePort = ~TFTP_SERVER_PORT;
 
 	// send initial TFTP RRQ
-	UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
+	UDP_RegisterSocket (sock.SourcePort, (void(*)(void))tftp_get);
 	sendTFTPrequest();
 	
 	while (1)
@@ -268,9 +275,11 @@ void tftp_get (void)
 	// Reset timeout counter
 	tftpTimeoutCounter = 0;
 
+#ifndef FIXED_TFTP_SRV
+	
 	if (sock.DestinationIP == 0)
 	{
-	#if DHCP_PARSE_TFTP_PARAMS
+	#ifdef DHCP_PARSE_TFTP_PARAMS
 			sock.DestinationIP = IP_packet->IP_Srcaddr;
 	#else
 		// ok, this is the first answer from this TFTP-Server
@@ -288,7 +297,7 @@ void tftp_get (void)
 			// don't listen to this port anymore, we got what we want
 			UDP_UnRegisterSocket(sock.SourcePort--);
 			// register a new port
-			UDP_RegisterSocket (sock.SourcePort, (void(*)(unsigned char))tftp_get);
+			UDP_RegisterSocket (sock.SourcePort, (void(*)(void))tftp_get);
 		}
 		// say bye to any server - wether it delivers data or not
 	    arp_entry_add(IP_packet->IP_Srcaddr, ETH_packet->ETH_sourceMac); 
@@ -297,13 +306,16 @@ void tftp_get (void)
 		// get Errorstring from EEPROM to save FLASH
 		eeprom_read_block ((void*)udpSendBuffer, (const void*)&maTFTPErrStr, TFTPErrStrSize);
 		UDP_SendPacket (TFTPErrStrSize, sock.SourcePort, htons(UDP_packet->UDP_SourcePort), IP_packet->IP_Srcaddr);
-#if DEBUG_AV && DEBUG_TFTP
-	putpgmstring("TFTP ERR sent\r\n");
-#endif	
+
+		#if DEBUG_AV && DEBUG_TFTP
+			putpgmstring("TFTP ERR sent\r\n");
+		#endif	
 		
 		return;
 	#endif
 	}
+
+#endif
 	
 	if (sock.DestinationIP != IP_packet->IP_Srcaddr)
 	{	// other TFTP-Server is sending data - ignore it.

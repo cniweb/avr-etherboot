@@ -23,7 +23,7 @@
 ------------------------------------------------------------------------------*/
 #include "config.h"
 
-#if USE_DHCP
+#ifdef USE_DHCP
 #include "ethernet.h"
 #include "dhcpc.h"
 #include "udp.h"

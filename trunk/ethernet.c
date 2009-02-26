@@ -14,7 +14,7 @@
 #include "arp.h"
 #include "enc28j60.h"
 #include "udp.h"
-#if USE_DHCP
+#ifdef USE_DHCP
 #include "dhcpc.h"
 #endif //USE_DHCP
 
@@ -48,7 +48,7 @@ void stack_init (void)
 	
 	udp_init();
 	
-#if USE_DHCP
+#ifdef USE_DHCP
 	dhcp_init();
 #endif //USE_DHCP
 

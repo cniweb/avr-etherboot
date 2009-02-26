@@ -40,14 +40,21 @@
 #include "arp.h"
 #include "enc28j60.h"
 
-//struct UDP_SOCKET sock;
-
-UDP_PORT_ITEM UDP_PORT_TABLE[MAX_UDP_ENTRY]; // Port-Tabelle
+#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+  UDP_PORT_ITEM UDP_PORT_TABLE; // Single entry Port-Tabelle
+#else
+  UDP_PORT_ITEM UDP_PORT_TABLE[MAX_UDP_ENTRY]; // Port-Tabelle
+#endif
 
 void udp_init(void)
 {
+
+#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+	UDP_PORT_TABLE.port = 0;
+#else
 	for (uint8_t i=0; i<MAX_UDP_ENTRY; i++)
 		UDP_PORT_TABLE[i].port = 0;
+#endif
 }
 
 /* -----------------------------------------------------------------------------------------------------------*/
@@ -67,9 +74,22 @@ void udp (void)
 	struct UDP_header * UDP_packet;
 	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
-	unsigned char port_index = 0;	
-
 	//UDP DestPort mit Portanwendungsliste durchführen
+#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+	if (UDP_PORT_TABLE.port == htons(UDP_packet->UDP_DestinationPort))
+	{
+		UDP_PORT_TABLE.fp();
+	}
+#if DEBUG_AV
+	else
+	{
+		putpgmstring("No funktion for this packet found - discarded\r\n");
+	}
+#endif	
+#else
+
+	unsigned char port_index = 0;	
+	
 	while (UDP_PORT_TABLE[port_index].port && UDP_PORT_TABLE[port_index].port!=htons(UDP_packet->UDP_DestinationPort))
 	{ 
 		port_index++;
@@ -85,15 +105,28 @@ void udp (void)
 	}
 
 	//zugehörige Anwendung ausführen
-	UDP_PORT_TABLE[port_index].fp(0); 
+	UDP_PORT_TABLE[port_index].fp(); 
 	return;
+#endif
 }
 
 
 //----------------------------------------------------------------------------
 //Trägt UDP PORT/Anwendung in Anwendungsliste ein
-uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char))
+uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(void))
 {
+
+#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+	if (UDP_PORT_TABLE.port != 0)
+		return 0;
+	else
+	{
+		UDP_PORT_TABLE.port = port;
+		UDP_PORT_TABLE.fp = *fp1;
+		return 1;
+	}
+#else
+
 	unsigned char port_index = 0;
 	//Freien Eintrag in der Anwendungliste suchen
 	while ((UDP_PORT_TABLE[port_index].port) && (port_index < MAX_UDP_ENTRY))
@@ -109,6 +142,7 @@ uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char))
 	UDP_PORT_TABLE[port_index].port = port;
 	UDP_PORT_TABLE[port_index].fp = *fp1;
 	return 1;
+#endif
 }
 
 
@@ -116,7 +150,11 @@ uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(unsigned char))
 //Löscht UDP Anwendung aus der Anwendungsliste
 void UDP_UnRegisterSocket (unsigned int port)
 {
-    unsigned char i;
+ 
+#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+	UDP_PORT_TABLE.port = 0;
+#else
+	unsigned char i;
 
     for (i = 0; i < MAX_UDP_ENTRY; i++)
     {
@@ -125,7 +163,7 @@ void UDP_UnRegisterSocket (unsigned int port)
             UDP_PORT_TABLE[i].port = 0;
         }
     }
-    return;
+#endif
 }
 
 
