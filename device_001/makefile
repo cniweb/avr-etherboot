@@ -50,7 +50,26 @@
 
 # atmega32
 MCU = atmega32
-BOOTLOADER_START = 0x7000 # byteadresse!
+
+# BOOTLOADERSTART depends on BOOTSZ0/1 and flashsize of mcu
+# size of bootloadersection has to be set to 1024 words
+# Mega8			BL_START= 0x1800	Size =  0x1fff
+# Mega16		BL_START= 0x3800	Size =  0x3fff
+# Mega32		BL_START= 0x7800	Size =  0x7fff
+# Mega64/644	BL_START= 0xf800	Size =  0xffff
+# Mega 128		BL_START= 0x1f800	Size =  0x1ffff
+
+
+ifeq ($(MCU),atmega8)
+  BOOTLOADER_START = 0x1800
+else
+  ifeq ($(MCU),atmega16)
+    BOOTLOADER_START = 0x3800
+  else
+    BOOTLOADER_START = 0x7800
+  endif
+endif
+
 F_CPU =  7372800
 
 

@@ -12,42 +12,30 @@
 #define	MYMAC5 0x04
 #define	MYMAC6 0x99
 
-#if defined (__AVR_ATmega32__)
-	#define MTU_SIZE 600
+
+// BOOTLOADER_VERSION selects the version to build (see docs)
+// allowed values are:  SMALL, MEDIUM, LARGE
+
+#define BL_VERSION_SMALL  1
+#define BL_VERSION_MEDIUM 2
+#define BL_VERSION_LARGE  3
+
+#define BOOTLOADER_VERSION BL_VERSION_SMALL
+
+#if BOOTLOADER_VERSION >= BL_VERSION_MEDIUM
+  #define USE_DHCP
+  #define DHCP_PARSE_TFTP_PARAMS
+#else
+  #define FIXED_TFTP_SRV
 #endif
 
-#if defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__)
-	#define MTU_SIZE 1200
-#endif
 
-#if defined (__AVR_ATmega128__)
-	#define MTU_SIZE 1200
-#endif
+#define DEBUG_AV				0
+#define DEBUG_ENC_BUFFER_DATA	0
+#define DEBUG_FLASH_PROG		0
+#define DEBUG_TFTP				0
+#define DEBUG_ARP				0
 
-/////////////////////////////// PIN SETUP ////////////////////////////////////////////
-
-/*
-// ATMEGA2561
-
-//-> enc28j60
-#define ENC28J60_CONTROL_PORT	PORTG
-#define ENC28J60_CONTROL_DDR	DDRG
-#define ENC28J60_CONTROL_CS	3
-#define ENC28J60_INT_PORTBIT    6
-
-// -> SPI
-#define SPI_PORT		PORTB
-#define SPI_DDR			DDRB
-#define SS				PB0
-#define MISO			PB3
-#define MOSI			PB2
-#define SCK				PB1
-*/
-
-// ATMEGA32
-	
-#define USE_DHCP				1
-#define DHCP_PARSE_TFTP_PARAMS	1
 	
 //-> enc28j60
 #define USE_ENC28J60	1
@@ -78,6 +66,19 @@
 #define MISO		ENC28J60_PIN_MISO
 #define MOSI		ENC28J60_PIN_MOSI
 #define SCK			ENC28J60_PIN_SCK
+
+
+#if defined (__AVR_ATmega32__)
+	#define MTU_SIZE 600
+#endif
+
+#if defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__)
+	#define MTU_SIZE 1200
+#endif
+
+#if defined (__AVR_ATmega128__)
+	#define MTU_SIZE 1200
+#endif
 
 
 /////////////////////////////// HELPERS ////////////////////////////////////////////
@@ -114,12 +115,6 @@
 
 #define lo8(x) ((x   )&0xFF)
 #define hi8(x) (((x)>>8)&0xFF)
-
-#define DEBUG_AV				1
-#define DEBUG_ENC_BUFFER_DATA	0
-#define DEBUG_FLASH_PROG		0
-#define DEBUG_TFTP				1
-#define DEBUG_ARP				0
 
 // Debugging
 #if DEBUG_AV

@@ -23,7 +23,7 @@
 ------------------------------------------------------------------------------*/
 #include "config.h"
 
-#if USE_DHCP
+#ifdef USE_DHCP
 #ifndef _DHCPCLIENT_H
 	#define _DHCPCLIENT_H
 

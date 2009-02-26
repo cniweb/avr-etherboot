@@ -18,6 +18,10 @@ extern unsigned long EEMEM mlNetmaskEEP;
 extern unsigned long EEMEM mlGatewayEEP;
 extern unsigned long EEMEM mlDNSserverEEP;
 
+#ifdef FIXED_TFTP_SRV
+extern unsigned long EEMEM mlTFTPipEEP;
+#endif
+
 typedef struct 
 {
 	unsigned short opcode;
