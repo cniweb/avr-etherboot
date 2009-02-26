@@ -50,6 +50,7 @@
 
 # atmega32
 MCU = atmega32
+F_CPU =  7372800
 
 # BOOTLOADERSTART depends on BOOTSZ0/1 and flashsize of mcu
 # size of bootloadersection has to be set to 1024 words
@@ -69,8 +70,6 @@ else
     BOOTLOADER_START = 0x7800
   endif
 endif
-
-F_CPU =  7372800
 
 
 # Processor frequency.
