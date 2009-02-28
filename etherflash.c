@@ -62,20 +62,21 @@ void initializeHardware (void)
 	// reset hardware register
 	// disable TWI
 	TWCR &= ~(1<<TWIE);
+
 	// disable INT2
-	
-	
-#ifdef __AVR_ATmega32__
+#if defined GICR && defined INT2
 	GICR &= ~(1<<INT2);
-#else
+#elif defined EIMSK
 	EIMSK = 0;
 #endif
 
+#ifdef PORTA
 	DDRA = 0;
+	PORTA = 0;
+#endif
 	DDRB = 0;
 	DDRC = 0;
 	DDRD = 0;
-	PORTA = 0;
 	PORTB = 0;
 	PORTC = 0;
 	PORTD = 0;

@@ -43,9 +43,13 @@ void processLineBuffer(uint8_t bytes) BOOTLOADER_SECTION;
 void jumpToApplication(void) BOOTLOADER_SECTION;
 
 
-
+#if FLASHEND < 0x3fff
+// ATmega8
+#define pApplication()     asm volatile ("rcall 0x0000"::)
+#define pBootloader()      asm volatile ("rcall FLASHEND-BLSECSTRT"::)
+#else
 #define pApplication()     asm volatile ("call 0x00000"::)
 #define pBootloader()      asm volatile ("call FLASHEND-BLSECSTRT"::)
-
+#endif
 
 #endif
