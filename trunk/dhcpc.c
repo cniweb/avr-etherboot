@@ -94,6 +94,10 @@ struct dhcp_cache
 #define DHCP_STATE_ERR              7
 #define DHCP_STATE_FINISHED         8
 
+// local functions
+void get4bytes (unsigned char *source, unsigned char *target) BOOTLOADER_SECTION;
+void dhcp_parse_options (unsigned char *msg, struct dhcp_cache *c, unsigned int size) BOOTLOADER_SECTION;
+
 unsigned char dhcp_state;
 struct dhcp_cache cache; 
 volatile unsigned long dhcp_lease;
@@ -105,7 +109,7 @@ void dhcp_init (void)
 {
   //Port in Anwendungstabelle eintragen für eingehende DHCP Daten!
   dhcp_res.nStat = 0;
-  UDP_RegisterSocket (DHCP_CLIENT_PORT, (void(*)(unsigned char))dhcp_get);
+  UDP_RegisterSocket (DHCP_CLIENT_PORT, (void(*)(void))dhcp_get);
   dhcp_state = DHCP_STATE_IDLE;
   dhcp();
   return;
@@ -541,7 +545,7 @@ void dhcp_get (void)
 			mlDNSserver = cache.dns1_ip;
 			dhcp_res.btStat.bStatDNSserver= 1;
 		}
-#if DHCP_PARSE_TFTP_PARAMS		
+#ifdef DHCP_PARSE_TFTP_PARAMS		
 		if (msg->siaddr)
 		{
 			mlTFTPip = msg->siaddr;

@@ -40,7 +40,7 @@
 #include "arp.h"
 #include "enc28j60.h"
 
-#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+#if BOOTLOADER_FLAVOR == BL_VERSION_SMALL
   UDP_PORT_ITEM UDP_PORT_TABLE; // Single entry Port-Tabelle
 #else
   UDP_PORT_ITEM UDP_PORT_TABLE[MAX_UDP_ENTRY]; // Port-Tabelle
@@ -49,7 +49,7 @@
 void udp_init(void)
 {
 
-#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+#if BOOTLOADER_FLAVOR == BL_VERSION_SMALL
 	UDP_PORT_TABLE.port = 0;
 #else
 	for (uint8_t i=0; i<MAX_UDP_ENTRY; i++)
@@ -75,7 +75,7 @@ void udp (void)
 	UDP_packet = ( struct UDP_header *) &ethernetbuffer[ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 )];
 
 	//UDP DestPort mit Portanwendungsliste durchführen
-#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+#if BOOTLOADER_FLAVOR == BL_VERSION_SMALL
 	if (UDP_PORT_TABLE.port == htons(UDP_packet->UDP_DestinationPort))
 	{
 		UDP_PORT_TABLE.fp();
@@ -116,7 +116,7 @@ void udp (void)
 uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(void))
 {
 
-#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+#if BOOTLOADER_FLAVOR == BL_VERSION_SMALL
 	if (UDP_PORT_TABLE.port != 0)
 		return 0;
 	else
@@ -151,7 +151,7 @@ uint8_t UDP_RegisterSocket (unsigned int port, void(*fp1)(void))
 void UDP_UnRegisterSocket (unsigned int port)
 {
  
-#if BOOTLOADER_VERSION == BL_VERSION_SMALL
+#if BOOTLOADER_FLAVOR == BL_VERSION_SMALL
 	UDP_PORT_TABLE.port = 0;
 #else
 	unsigned char i;

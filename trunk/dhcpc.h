@@ -53,10 +53,10 @@ volatile union
 } dhcp_res;
 
 
-void dhcp_init     (void);
-void dhcp_message  (unsigned char type);
-void dhcp_get      (void);
-unsigned char dhcp (void);
+void dhcp_init     (void) BOOTLOADER_SECTION;
+void dhcp_message  (unsigned char type) BOOTLOADER_SECTION;
+void dhcp_get      (void) BOOTLOADER_SECTION;
+unsigned char dhcp (void) BOOTLOADER_SECTION;
 
 #endif //_DHCPCLIENT_H
 #endif //USE_DHCP

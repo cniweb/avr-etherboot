@@ -34,27 +34,18 @@ struct TFTP_RESPONSE
 
 #define TFTP_TIMEOUT F_CPU / 3000 // ca. 5 seconds
 
-int main(void) BOOTLOADER_SECTION;
-void BootLoaderMain(void) BOOTLOADER_SECTION;
+int main(void);
+void BootLoaderMain(void);
 void tftp_get (void) BOOTLOADER_SECTION;
-uint8_t hexToByte(uint8_t *buf, uint16_t idx) BOOTLOADER_SECTION;
-void writeFLASHPage(uint32_t currentAddress) BOOTLOADER_SECTION;
+uint8_t hexToByte(uint8_t *buf, uint16_t idx);
+void writeFLASHPage(uint32_t currentAddress);
 void processLineBuffer(uint8_t bytes) BOOTLOADER_SECTION;
 void jumpToApplication(void) BOOTLOADER_SECTION;
 
 
 
 #define pApplication()     asm volatile ("call 0x00000"::)
-
-#if defined (__AVR_ATmega2561__)
-	#define pBootloader()      asm volatile ("call 0x3e000"::)
-#endif
-#if defined (__AVR_ATmega32__)
-	#define pBootloader()      asm volatile ("call 0x7000"::)
-#endif
-#if defined (__AVR_ATmega644__)
-	#define pBootloader()      asm volatile ("call 0xF000"::)
-#endif
+#define pBootloader()      asm volatile ("call FLASHEND-BLSECSTRT"::)
 
 
 #endif

@@ -127,7 +127,7 @@ extern unsigned char ethernetbuffer[];
 extern unsigned long mlTFTPip;
 extern unsigned char msTFTPfileName[TFTP_FILENAME_SIZE];
 
-void stack_init (void);
+void stack_init (void) BOOTLOADER_SECTION;
 
 void eth_packet_dispatcher(void) BOOTLOADER_SECTION;
 

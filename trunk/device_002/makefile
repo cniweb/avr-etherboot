@@ -1,9 +1,11 @@
 # Hey Emacs, this is a -*- makefile -*-
 #----------------------------------------------------------------------------
+# Ethernet Bootloader for ATmega Makefile 
+# written by Andreas Vogt
+# v1.0 27.02.09
+#
+# based on 
 # WinAVR Makefile Template written by Eric B. Weddington, Jörg Wunsch, et al.
-#
-# Released to the Public Domain
-#
 # Additional material for this makefile was written by:
 # Peter Fleury
 # Tim Henigan
@@ -13,6 +15,8 @@
 # Sander Pool
 # Frederik Rouleau
 # Carlos Lamas
+#
+# Released to the Public Domain
 #
 #----------------------------------------------------------------------------
 # On command line:
@@ -39,59 +43,24 @@
 # To rebuild project do "make clean" then "make all".
 #----------------------------------------------------------------------------
 
+include makefile.in
 
-# MCU name
-# Startaddress of bootloadersection
-
-# atmega2561
-#MCU = atmega2561
-#BOOTLOADER_START = 0x3e000
-#F_CPU = 16000000
-
-# atmega32
-#MCU = atmega644
-MCU = atmega32
-F_CPU =  7372800
-
-# BOOTLOADERSTART depends on BOOTSZ0/1 and flashsize of mcu
-# size of bootloadersection has to be set to 1024 words
-# Mega8			BL_START= 0x1800	Size =  0x1fff
-# Mega16		BL_START= 0x3800	Size =  0x3fff
-# Mega32		BL_START= 0x7800	Size =  0x7fff
-# Mega64/644	BL_START= 0xf800	Size =  0xffff
-# Mega 128		BL_START= 0x1f800	Size =  0x1ffff
+# path to the make helper files
+SCRIPTPATH = ../make.files
 
 
-ifeq ($(MCU),atmega8)
-  BOOTLOADER_START = 0x1800
-else
-  ifeq ($(MCU),atmega16)
-    BOOTLOADER_START = 0x3800
-  else
-    BOOTLOADER_START = 0x7800
-  endif
-endif
+# Subtract this from FLASHEND to get bootloader SECTION start address.
+# The .text section will start at that address. That means, the lenght of
+# that section in bytes MAY NOT exceed the value specified here.
+# Note that this is different from the bootloader CODE start address !!
+# The bootloader code start address will be somewhere in the
+# application section and is calculated from the code size that the
+# linker returns. See rules %.sizeelf and %.elf for details.
+STAT_BLSECSIZE = 0x3ff
+# FLASHEND will be a byte address!
 
-
-# Processor frequency.
-#     This will define a symbol, F_CPU, in all source code files equal to the
-#     processor frequency. You can then use this symbol in your source code to 
-#     calculate timings. Do NOT tack on a 'UL' at the end, this will be done
-#     automatically to create a 32-bit value in your source code.
-#     Typical values are:
-#         F_CPU =  1000000
-#         F_CPU =  1843200
-#         F_CPU =  2000000
-#         F_CPU =  3686400
-#         F_CPU =  4000000
-#         F_CPU =  7372800
-#         F_CPU =  8000000
-#         F_CPU = 11059200
-#         F_CPU = 14745600
-#         F_CPU = 16000000
-#         F_CPU = 18432000
-#         F_CPU = 20000000
-
+# We use this file to store the output from avr-size
+FCODESIZE = size.txt
 
 # Output format. (can be srec, ihex, binary)
 FORMAT = ihex
@@ -109,7 +78,6 @@ OBJDIR = .
 
 # List C source files here. (C dependencies are automatically generated.)
 SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c ../dhcpc.c eemem.c
-# SRC = ../etherflash.c ../checksum.c ../ethernet.c ../arp.c ../enc28j60.c ../spi.c ../udp.c eemem.c
 
 
 # List C++ source files here. (C dependencies are automatically generated.)
@@ -155,7 +123,7 @@ CSTANDARD = -std=gnu99
 
 
 # Place -D or -U options here for C sources
-CDEFS = -DF_CPU=$(F_CPU)UL
+CDEFS = -DF_CPU=$(F_CPU)UL -DBOOTLOADER_FLAVOR=$(EMB_BOOTLOADER_FLAVOR) -DBLSECSTRT=$(STAT_BLSECSIZE)
 
 
 # Place -D or -U options here for ASM sources
@@ -290,14 +258,23 @@ EXTMEMOPTS =
 #    -Map:      create map file
 #    --cref:    add cross reference to  map file
 #LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
-LDFLAGS = -Wl,--section-start=.bootloader=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
+LDFLAGS = -Wl,--defsym=app_start=0
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
-LDFLAGS += -T ../eth-avr5.x
-#LDFLAGS += -T linker_script.x
+LDFLAGS += -Wl,--defsym=app_start=$(EMB_BOOTLOADER_SECTION_START)
+LDFLAGS += -Wl,--section-start=.text=$(EMB_BOOTLOADER_SECTION_START)
+#LDFLAGS += -T ../eth-avr5.x
+LDFLAGS += $(EMB_LINKER_SCRIPT)
+#LDFLAGS += -Wl,--section-start=.bootloader=$(bootloader_start)
 
+# these are only for the first linker run that calculates the size of the bootloader code
+LDSIZEFLAGS = $(LDFLAGS)
+LDSIZEFLAGS += -Wl,--section-start=.bootloader=0x0000
+
+LDFINALFLAGS = $(LDFLAGS)
+LDFINALFLAGS += -Wl,--section-start=.bootloader=$$blss
 #
 #04471/81089 Rolfes
 
@@ -380,10 +357,22 @@ SIZE = avr-size
 AR = avr-ar rcs
 NM = avr-nm
 AVRDUDE = avrdude
+AWK = gawk
 REMOVE = rm -f
 REMOVEDIR = rm -rf
 COPY = cp
 WINSHELL = cmd
+# name of the helper script that creates makefile.in
+SCRIPTFILE = configure.sh
+#name of the script that checks the .text section size
+SCRIPTCHECK = checksize.sh
+
+# Fiddle bootloader code size out of FCODESIZE
+GETBLSIZE = $(AWK) '/\.bootloader[[:space:]]+[[:xdigit:]]+/ {print $$2}' $(FCODESIZE)
+
+# Display size of file.
+HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
+ELFSIZE = $(SIZE) --mcu=$(MCU) --format=avr $(TARGET).elf
 
 
 # Define Messages
@@ -399,6 +388,7 @@ MSG_FLASH = Creating load file for Flash:
 MSG_EEPROM = Creating load file for EEPROM:
 MSG_EXTENDED_LISTING = Creating Extended Listing:
 MSG_SYMBOL_TABLE = Creating Symbol Table:
+MSG_LINKING4SIZE = Calculate code size:
 MSG_LINKING = Linking:
 MSG_COMPILING = Compiling C:
 MSG_COMPILING_CPP = Compiling C++:
@@ -427,11 +417,14 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 all: begin gccversion sizebefore build sizeafter end
 
 
+
+
 # Change the build target to build a HEX file or a library.
-build: elf hex eep lss sym
+build: sizeelf elf hex eep lss sym
 #build: lib
 
 
+sizeelf: $(TARGET).sizeelf
 elf: $(TARGET).elf
 hex: $(TARGET).hex
 eep: $(TARGET).eep
@@ -453,10 +446,6 @@ end:
 	@echo $(MSG_END)
 	@echo
 
-
-# Display size of file.
-HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
-ELFSIZE = $(SIZE) --mcu=$(MCU) --format=avr $(TARGET).elf
 
 sizebefore:
 	@if test -f $(TARGET).elf; then echo; echo $(MSG_SIZE_BEFORE); $(ELFSIZE); \
@@ -566,23 +555,45 @@ extcoff: $(TARGET).elf
 	@echo $(MSG_CREATING_LIBRARY) $@
 	$(AR) $@ $(OBJ)
 
+#ls -l
 
+# PreLink: Let the linker calculate the size of the bootloader code.
+#.SECONDARY : $(TARGET).sizeelf
+%.sizeelf: $(OBJ)
+	@echo
+	@echo $(MSG_LINKING4SIZE) $@
+	$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDSIZEFLAGS)
+	$(SIZE) -x -A $(TARGET).sizeelf	> $(FCODESIZE)
+	
+# check size of .text section, the linker will ignore an overflow
+# we need to manipulate the PATH variable of the shell to be able
+# to call a script that does not reside in the current directory
+# this is a hack for the windows version of the GNU shell
+	PATH=$$PATH:$(SCRIPTPATH) && . $(SCRIPTCHECK) $(FCODESIZE) $(STAT_BLSECSIZE)
+
+	
 # Link: create ELF output file from object files.
 .SECONDARY : $(TARGET).elf
 .PRECIOUS : $(OBJ)
 %.elf: $(OBJ)
 	@echo
 	@echo $(MSG_LINKING) $@
-	$(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFLAGS)
+	blss=`$(GETBLSIZE)`; $(CC) $(ALL_CFLAGS) $^ --output $@ $(LDFINALFLAGS)
 
+
+makefile.in :
+# we need to manipulate the PATH variable of the shell to be able
+# to call a script that does not reside in the current directory
+# this is a hack for the windows version of the GNU shell
+	PATH=$$PATH:$(SCRIPTPATH); . $(SCRIPTFILE) $(CC) $(SCRIPTPATH)
 
 # Compile: create object files from C source files.
-$(OBJDIR)/%.o : ../%.c
+$(OBJDIR)/%.o : ../%.c  makefile.in
 	@echo
 	@echo $(MSG_COMPILING) $<
 	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
 
-$(OBJDIR)/%.o : %.c
+$(OBJDIR)/%.o : %.c makefile.in
 	@echo
 	@echo $(MSG_COMPILING) $<
 	$(CC) -c $(ALL_CFLAGS) $< -o $@ 
@@ -620,6 +631,8 @@ $(OBJDIR)/%.o : %.S
 # Target: clean project.
 clean: begin clean_list end
 
+distclean: begin clean_list distclean_list end
+
 clean_list :
 	@echo
 	@echo $(MSG_CLEANING)
@@ -627,6 +640,7 @@ clean_list :
 	$(REMOVE) $(TARGET).eep
 	$(REMOVE) $(TARGET).cof
 	$(REMOVE) $(TARGET).elf
+	$(REMOVE) $(TARGET).sizeelf
 	$(REMOVE) $(TARGET).map
 	$(REMOVE) $(TARGET).sym
 	$(REMOVE) $(TARGET).lss
@@ -638,6 +652,9 @@ clean_list :
 	$(REMOVE) .dep/*
 #	$(REMOVEDIR) .dep
 
+distclean_list :
+	$(REMOVEDIR) .dep
+	$(REMOVE) makefile.in
 
 # Create object files directory
 $(shell mkdir $(OBJDIR) 2>/dev/null)
@@ -649,7 +666,7 @@ $(shell mkdir $(OBJDIR) 2>/dev/null)
 
 # Listing of phony targets.
 .PHONY : all begin finish end sizebefore sizeafter gccversion \
-build elf hex eep lss sym coff extcoff \
+bldsize build elf hex eep lss sym coff extcoff \
 clean clean_list program debug gdb-config
 
 

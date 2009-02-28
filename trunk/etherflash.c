@@ -53,6 +53,10 @@ uint32_t currentAddress;
 struct UDP_SOCKET sock;
 uint16_t tftpTimeoutCounter;
 
+// local functions
+void initializeHardware (void) BOOTLOADER_SECTION;
+void sendTFTPrequest(void) BOOTLOADER_SECTION;
+
 void initializeHardware (void)
 {
 	// reset hardware register
