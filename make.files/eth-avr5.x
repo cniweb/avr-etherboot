@@ -13,10 +13,6 @@ MEMORY
 }
 SECTIONS
 {
-  .bootloader  :
-  {
-    *(.bootloader*)
-  }  > bootloader
   /* Read-only sections, merged into text segment: */
   .hash          : { *(.hash)		}
   .dynsym        : { *(.dynsym)		}
@@ -74,11 +70,8 @@ SECTIONS
   .rela.bss      : { *(.rela.bss)		}
   .rel.plt       : { *(.rel.plt)		}
   .rela.plt      : { *(.rela.plt)		}
-  /* Internal text space or external memory.  */
-  .text   :
+  .bootloader  :
   {
-    *(.vectors)
-    KEEP(*(.vectors))
     /* For data that needs to reside in the lower 64k of progmem.  */
     *(.progmem.gcc*)
     *(.progmem*)
@@ -103,6 +96,13 @@ SECTIONS
      __dtors_end = . ;
     KEEP(SORT(*)(.ctors))
     KEEP(SORT(*)(.dtors))
+    *(.bootloader*)
+  }  > bootloader
+  /* Internal text space or external memory.  */
+  .text   :
+  {
+    *(.vectors)
+    KEEP(*(.vectors))
     /* From this point on, we don't bother about wether the insns are
        below or above the 16 bits boundary.  */
     *(.init0)  /* Start here after reset.  */
