@@ -20,7 +20,8 @@
 #define BL_VERSION_MEDIUM 2
 #define BL_VERSION_LARGE  3
 
-#define BOOTLOADER_VERSION BL_VERSION_SMALL
+// makefile will pass the definition thru the compiler
+// #define BOOTLOADER_FLAVOR BL_VERSION_SMALL
 
 #if BOOTLOADER_VERSION >= BL_VERSION_MEDIUM
   #define USE_DHCP
@@ -68,16 +69,10 @@
 #define SCK			ENC28J60_PIN_SCK
 
 
-#if defined (__AVR_ATmega32__)
+#if defined (__AVR_ATmega64__) || defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__) || defined (__AVR_ATmega128__)
+	#define MTU_SIZE 1200
+#else
 	#define MTU_SIZE 600
-#endif
-
-#if defined (__AVR_ATmega644__) || defined (__AVR_ATmega644P__)
-	#define MTU_SIZE 1200
-#endif
-
-#if defined (__AVR_ATmega128__)
-	#define MTU_SIZE 1200
 #endif
 
 
@@ -121,10 +116,10 @@
 
 #include <avr/pgmspace.h>
 
-void sendchar (unsigned char Zeichen);
-void puthexbyte(uint8_t bt);
-void putstring (unsigned char *string);
-void putPGMstring(const char *progmem_s);
+void sendchar (unsigned char Zeichen) BOOTLOADER_SECTION;
+void puthexbyte(uint8_t bt) BOOTLOADER_SECTION;
+void putstring (unsigned char *string) BOOTLOADER_SECTION;
+void putPGMstring(const char *progmem_s) BOOTLOADER_SECTION;
 #define putpgmstring(__s) putPGMstring(PSTR(__s))
 #endif
 

@@ -30,9 +30,9 @@
 		uint8_t time;
 	};
 	
-	void arp_reply (void);
-	void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac);
-	unsigned char *arp_entry_search (unsigned long dest_ip);
+	void arp_reply (void) BOOTLOADER_SECTION;
+	void arp_entry_add (unsigned long sourceIP, unsigned char *sourceMac) BOOTLOADER_SECTION;
+	unsigned char *arp_entry_search (unsigned long dest_ip) BOOTLOADER_SECTION;
 
 
 

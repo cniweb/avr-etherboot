@@ -37,7 +37,7 @@
 	};
 
 	
-	void udp_init(void);
+	void udp_init(void) BOOTLOADER_SECTION;
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*! Hier findet die Bearbeitung des Packetes statt welches ein UDP-Packet enthaelt. Es wir versucht die
@@ -49,7 +49,7 @@
 	 * \return  NONE
 	 */
 	/* -----------------------------------------------------------------------------------------------------------*/
-	void udp (void);
+	void udp (void) BOOTLOADER_SECTION;
 
 	/* -----------------------------------------------------------------------------------------------------------*/
 	/*!\brief Sendet ein UDP-Packet an einen Host.

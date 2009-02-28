@@ -3,8 +3,8 @@ OUTPUT_FORMAT("elf32-avr","elf32-avr","elf32-avr")
 OUTPUT_ARCH(avr:5)
 MEMORY
 {
-  text      (rx)   : ORIGIN = 0, LENGTH = 128K
   bootloader (rx)   : ORIGIN = 0, LENGTH = 128K
+  text      (rx)   : ORIGIN = 0, LENGTH = 128K
   data      (rw!x) : ORIGIN = 0x800060, LENGTH = 0xffa0
   eeprom    (rw!x) : ORIGIN = 0x810000, LENGTH = 64K
   fuse      (rw!x) : ORIGIN = 0x820000, LENGTH = 1K
@@ -13,6 +13,10 @@ MEMORY
 }
 SECTIONS
 {
+  .bootloader  :
+  {
+    *(.bootloader*)
+  }  > bootloader
   /* Read-only sections, merged into text segment: */
   .hash          : { *(.hash)		}
   .dynsym        : { *(.dynsym)		}
@@ -178,10 +182,6 @@ SECTIONS
      _end = . ;
      PROVIDE (__heap_start = .) ;
   }  > data
-  .bootloader  :
-  {
-    *(.bootloader*)
-  }  > bootloader
   .eeprom  :
   {
     *(.eeprom*)

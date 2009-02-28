@@ -276,7 +276,7 @@ unsigned int enc28j60PhyRead( unsigned char address) BOOTLOADER_SECTION;
 void enc28j60PhyWrite( unsigned char address,  unsigned int data) BOOTLOADER_SECTION;
 
 //! initialize the ethernet interface for transmit/receive
-void enc28j60Init(void);
+void enc28j60Init(void) BOOTLOADER_SECTION;
 
 //! Packet transmit function.
 /// Sends a packet on the network.  It is assumed that the packet is headed by a valid ethernet header.
