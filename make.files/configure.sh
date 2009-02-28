@@ -90,7 +90,7 @@ function sel_device()
 	echo
 	# we need a neat little piece of code for the compiler to get the
 	# defined values for the device
-	echo "#include <avr/io.h>" > foo.c
+	echo "#include <avr/io.h>" > "$EMBFOO_FILE"
 	select emb_reply in $STAT_MCU
 	do
 		echo "=> checking MCU..."
