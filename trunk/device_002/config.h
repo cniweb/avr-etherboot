@@ -13,7 +13,7 @@
 #define	MYMAC6 0x99
 
 
-// BOOTLOADER_VERSION selects the version to build (see docs)
+// BOOTLOADER_FLAVOR selects the version to build (see docs)
 // allowed values are:  SMALL, MEDIUM, LARGE
 
 #define BL_VERSION_SMALL  1
@@ -23,7 +23,7 @@
 // makefile will pass the definition thru the compiler
 // #define BOOTLOADER_FLAVOR BL_VERSION_SMALL
 
-#if BOOTLOADER_VERSION >= BL_VERSION_MEDIUM
+#if BOOTLOADER_FLAVOR >= BL_VERSION_MEDIUM
   #define USE_DHCP
   #define DHCP_PARSE_TFTP_PARAMS
 #else
