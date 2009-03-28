@@ -142,6 +142,57 @@ int main(void)
 	return(0);
 }
 
+void BootLoaderMain(void)
+{
+	uint8_t nRetryCounter = 0;
+
+	// init global vars
+	baseAddress = 0;
+	bytesInBootPage = 0;
+	currentAddress = 0;
+	tftpTimeoutCounter = 0;
+	
+	sock.DestinationIP = 0;
+	sock.Bufferfill = 0;
+	sock.BlockNumber = 0;
+	sock.lineBufferIdx = 0;
+	sock.SourcePort = ~TFTP_SERVER_PORT;
+
+	// send initial TFTP RRQ
+	UDP_RegisterSocket (sock.SourcePort, (void(*)(void))tftp_get);
+	sendTFTPrequest();
+	
+	while (1)
+	{
+
+		eth_packet_dispatcher();
+	
+		_delay_ms(2);
+		
+		if (tftpTimeoutCounter++ > TFTP_TIMEOUT)
+		{
+#if DEBUG_AV && DEBUG_TFTP
+	putpgmstring("TFTP timeout\r\n");
+#endif	
+			if ((sock.DestinationIP != 0) && (nRetryCounter++ < 4))
+			{	// ok, we had contact to a server, may be it was
+				// the first contact to discover the ip.
+				// Try again, but not unlimited
+				tftpTimeoutCounter = 0;
+				sendTFTPrequest();
+			}
+			else
+#if DEBUG_AV
+	tftpTimeoutCounter = 0;	// stay in this loop, do nothing
+#else
+				jumpToApplication();
+#endif	
+		}
+		
+	}
+	
+}
+
 void sendTFTPrequest(void)
 {
 	
@@ -205,57 +256,6 @@ void sendTFTPrequest(void)
 
 }
 
-
-void BootLoaderMain(void)
-{
-	uint8_t nRetryCounter = 0;
-
-	// init global vars
-	baseAddress = 0;
-	bytesInBootPage = 0;
-	currentAddress = 0;
-	tftpTimeoutCounter = 0;
-	
-	sock.DestinationIP = 0;
-	sock.Bufferfill = 0;
-	sock.BlockNumber = 0;
-	sock.lineBufferIdx = 0;
-	sock.SourcePort = ~TFTP_SERVER_PORT;
-
-	// send initial TFTP RRQ
-	UDP_RegisterSocket (sock.SourcePort, (void(*)(void))tftp_get);
-	sendTFTPrequest();
-	
-	while (1)
-	{
-
-		eth_packet_dispatcher();
-	
-		_delay_ms(2);
-		
-		if (tftpTimeoutCounter++ > TFTP_TIMEOUT)
-		{
-#if DEBUG_AV && DEBUG_TFTP
-	putpgmstring("TFTP timeout\r\n");
-#endif	
-			if ((sock.DestinationIP != 0) && (nRetryCounter++ < 4))
-			{	// ok, we had contact to a server, may be it was
-				// the first contact to discover the ip.
-				// Try again, but not unlimited
-				tftpTimeoutCounter = 0;
-				sendTFTPrequest();
-			}
-			else
-#if DEBUG_AV
-	tftpTimeoutCounter = 0;	// stay in this loop, do nothing
-#else
-				jumpToApplication();
-#endif	
-		}
-		
-	}
-	
-}
 
 
 void tftp_get (void)
