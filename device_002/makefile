@@ -154,6 +154,7 @@ CFLAGS += -fshort-enums
 CFLAGS += -Wall
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -mcall-prologues
+#CFLAGS += -ffunction-sections
 #CFLAGS += -mshort-calls
 #CFLAGS += -fno-unit-at-a-time
 #CFLAGS += -Wundef
@@ -260,6 +261,7 @@ EXTMEMOPTS =
 #LDFLAGS = -Wl,--section-start=.text=$(BOOTLOADER_START) -Wl,--defsym=app_start=0
 LDFLAGS = -Wl,--defsym=app_start=0
 LDFLAGS += -Wl,-Map=$(TARGET).map,--cref
+#LDFLAGS += -Wl,--gc-sections
 LDFLAGS += $(EXTMEMOPTS)
 LDFLAGS += $(patsubst %,-L%,$(EXTRALIBDIRS))
 LDFLAGS += $(PRINTF_LIB) $(SCANF_LIB) $(MATH_LIB)
@@ -368,7 +370,7 @@ SCRIPTFILE = configure.sh
 SCRIPTCHECK = checksize.sh
 
 # Fiddle bootloader code size out of FCODESIZE
-GETBLSIZE = $(AWK) '/\.bootloader[[:space:]]+[[:xdigit:]]+/ {print $$2}' $(FCODESIZE)
+GETBLSIZE = $(AWK) '/BL_CODE_START[[:space:]]+[[:xdigit:]]+/ {print $$2}' $(FCODESIZE)
 
 # Display size of file.
 HEXSIZE = $(SIZE) --target=$(FORMAT) $(TARGET).hex
@@ -569,7 +571,7 @@ extcoff: $(TARGET).elf
 # we need to manipulate the PATH variable of the shell to be able
 # to call a script that does not reside in the current directory
 # this is a hack for the windows version of the GNU shell
-	PATH=$$PATH:$(SCRIPTPATH) && . $(SCRIPTCHECK) $(FCODESIZE) $(STAT_BLSECSIZE)
+	PATH=$$PATH:$(SCRIPTPATH) && . $(SCRIPTCHECK) $(FCODESIZE) $(STAT_BLSECSIZE) $(EMB_BOOTLOADER_SECTION_START)
 
 	
 # Link: create ELF output file from object files.
@@ -585,7 +587,7 @@ makefile.in :
 # we need to manipulate the PATH variable of the shell to be able
 # to call a script that does not reside in the current directory
 # this is a hack for the windows version of the GNU shell
-	PATH=$$PATH:$(SCRIPTPATH); . $(SCRIPTFILE) $(CC) $(SCRIPTPATH)
+	PATH=$$PATH:$(SCRIPTPATH); . $(SCRIPTFILE) $(CC) $(SCRIPTPATH) $(STAT_BLSECSIZE)
 
 # Compile: create object files from C source files.
 $(OBJDIR)/%.o : ../%.c  makefile.in
