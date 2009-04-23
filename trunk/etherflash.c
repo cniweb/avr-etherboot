@@ -508,7 +508,7 @@ void writeFLASHPage(uint32_t currentAddress)
 
 void FillFlashPage(uint32_t currentAddress, uint8_t loByte, uint8_t hiByte)
 {	// All SPM instructions must be in the NRWW section
-	boot_page_fill_safe(currentAddress, loByte + hiByte << 8);
+	boot_page_fill_safe(currentAddress, loByte + (hiByte << 8));
 }
 
 // parse a line of the intel hex file. 

@@ -647,7 +647,8 @@ clean_list :
 	$(REMOVE) $(TARGET).sym
 	$(REMOVE) $(TARGET).lss
 	$(REMOVE) $(patsubst %.c,$(OBJDIR)/%.o,$(subst ../,,$(SRC)))
-	$(REMOVE) $(patsubst %.c,$(OBJDIR)/%.lst,$(subst ../,,$(SRC)))
+#	$(REMOVE) $(patsubst %.c,$(OBJDIR)/%.lst,$(subst ../,,$(SRC)))
+	$(REMOVE) $(SRC:.c=.lst)
 	$(REMOVE) $(SRC:.c=.s)
 	$(REMOVE) $(SRC:.c=.d)
 	$(REMOVE) $(SRC:.c=.i)
