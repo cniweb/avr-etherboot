@@ -200,6 +200,7 @@ void UDP_SendPacket(unsigned int  data_length,
     //Berechnet Headerlänge und Addiert Pseudoheaderlänge 2XIP = 8
     result16 = htons(ip->IP_Totallenght) + 8;
     result16 = result16 - ((ip->IP_Version_Headerlen & 0x0F) << 2);
+	// will never exceed 0xffff, so word arithmetic should do
     result32 = result16 + 0x09;
   
     //Routine berechnet die Checksumme

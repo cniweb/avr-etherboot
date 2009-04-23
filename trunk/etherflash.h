@@ -37,8 +37,9 @@ struct TFTP_RESPONSE
 int main(void);
 void BootLoaderMain(void);
 void tftp_get (void) BOOTLOADER_SECTION;
-uint8_t hexToByte(uint8_t *buf, uint16_t idx) BOOTLOADER_SECTION;
+uint8_t hexToByte(uint8_t *buf, uint16_t idx);
 void writeFLASHPage(uint32_t currentAddress);
+void FillFlashPage(uint32_t currentAddress, uint8_t loByte, uint8_t hiByte) __attribute ((__noinline__));
 void processLineBuffer(uint8_t bytes) BOOTLOADER_SECTION;
 void jumpToApplication(void) BOOTLOADER_SECTION;
 

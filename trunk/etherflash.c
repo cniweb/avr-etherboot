@@ -497,9 +497,18 @@ void writeFLASHPage(uint32_t currentAddress)
 	
 	    boot_page_write (currentAddress-2);     // Store buffer in flash page.
 	    boot_spm_busy_wait();       			// Wait until the memory is written.
+		boot_rww_enable(); 						// Parts of the bootloader code may
+												// be in the RWW section, so make sure
+												// we can access it. Thanks to
+												// Dirk Armbrust for the hint.
 	#endif
 
     bytesInBootPage = 0;
+}
+
+void FillFlashPage(uint32_t currentAddress, uint8_t loByte, uint8_t hiByte)
+{	// All SPM instructions must be in the NRWW section
+	boot_page_fill_safe(currentAddress, loByte + hiByte << 8);
 }
 
 // parse a line of the intel hex file. 
@@ -528,7 +537,7 @@ void processLineBuffer(uint8_t bytes)
 					putpgmstring("boot_page_fill_safe\r\n");
 					#endif
 				#else
-				    boot_page_fill_safe (currentAddress, lineBuffer[i+4+0] + (lineBuffer[i+4+1] << 8));
+				    FillFlashPage (currentAddress, lineBuffer[i+4+0], lineBuffer[i+4+1]);
 				#endif
 				currentAddress += 2;
 				bytesInBootPage += 2;
