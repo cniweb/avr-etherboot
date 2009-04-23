@@ -70,7 +70,7 @@ uint16_t Checksum_16 (unsigned char * pointer, uint16_t headerlenght, unsigned l
 
 	//Komplementbildung (addiert Long INT_H Word mit Long INT L Word)
 	while (checksum.nWordAcc.DataH)
-		checksum.lLongAcc = checksum.nWordAcc.DataL + checksum.nWordAcc.DataH;
+		checksum.lLongAcc = (uint32_t)checksum.nWordAcc.DataL + (uint32_t)checksum.nWordAcc.DataH;
 	return ~(checksum.nWordAcc.DataL);
 }
 
