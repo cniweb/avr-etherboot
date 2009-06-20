@@ -1,11 +1,11 @@
 /* Default linker script, for normal executables */
 OUTPUT_FORMAT("elf32-avr","elf32-avr","elf32-avr")
-OUTPUT_ARCH(avr:51)
+OUTPUT_ARCH(avr:6)
 MEMORY
 {
-  bootloader (rx)   : ORIGIN = 0, LENGTH = 128K
-  text      (rx)   : ORIGIN = 0, LENGTH = 128K
-  data      (rw!x) : ORIGIN = 0x800060, LENGTH = 0xffa0
+  bootloader (rx)   : ORIGIN = 0, LENGTH = 1024K
+  text      (rx)   : ORIGIN = 0, LENGTH = 1024K
+  data      (rw!x) : ORIGIN = 0x800200, LENGTH = 0xfe00
   eeprom    (rw!x) : ORIGIN = 0x810000, LENGTH = 64K
   fuse      (rw!x) : ORIGIN = 0x820000, LENGTH = 1K
   lock      (rw!x) : ORIGIN = 0x830000, LENGTH = 1K
@@ -70,8 +70,7 @@ SECTIONS
   .rela.bss      : { *(.rela.bss)		}
   .rel.plt       : { *(.rel.plt)		}
   .rela.plt      : { *(.rela.plt)		}
-  .bootloader  :
-  {
+  .bootloader  :  {
     /* For data that needs to reside in the lower 64k of progmem.  */
     *(.progmem.gcc*)
     *(.progmem*)
