@@ -1,7 +1,5 @@
 #summary Instructions how to get started with teh avr etherboot bootloader
 #labels Phase-Deploy,Featured
-= How to get started =
-
 
 = Introduction =
 
@@ -20,4 +18,19 @@ Optionally you need a DHCP Server for supplying an IP address for the device and
 You can select from two different version of the bootloader namely "small" and "medium".
 The small version uses fixed ip address for itself and for the TFTP server to contact. The medium version contains a DHCP client implementation which requests the configuration data from a DHCP server.
 
+The selection of the version to build is done by the makefile (see section compiling the code).
+To configure MAC address and IP address, TFTP IP address and filename, edit the files eemem.c and config.h in the folder device_001.
+
 = Compiling the code =
+
+Change to the directory device_001 and call make.
+The first time make ist called, a shellscript is started, which asks you some questions about the version to build and some parameters concerning the mcu type and oscillator frequency. The values are stored in the file makefile.in. You can delete the file, to get asked again when calling make.
+
+Afterwards the sources are compiled to the output files device_001.hex (FLASH image) and device_001.eep (EEPROM image).
+
+= Programming the device =
+
+You have to programm both the FLASH (hex-file) and EEPROM (eep-file).
+You have to programm the following fuses:
+  * BOOTSZ0 = 1 (not programmed), BOOTSZ1 = 1 (not programmed) to select bootsize 512 words.
+  * BOOTRST = 0 (programmed) to jump to the bootloadercode after reset and power on.
