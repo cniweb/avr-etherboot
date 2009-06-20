@@ -23,7 +23,7 @@ EMBDEFS_FILE="embdefs.txt"		# the compiler will generate this
 EMBFOO_FILE="foo.c"				# we create a little file for the compiler to compile
 
 # define options to choose from
-STAT_MCU="atmega8 atmega16 atmega32 atmega64 atmega128"
+STAT_MCU="atmega8 atmega16 atmega32 atmega64 atmega128 atmega2560 atmega2561"
 
 STAT_FREQ="1000000 1843200 2000000 3686400 4000000 7372800 8000000 11059200 \
 14745600 16000000 18432000 20000000"
@@ -109,7 +109,7 @@ function sel_device()
 				echo "ERROR: Sorry, device $emb_device seems to be unknown to the compiler, please choose another one."
 			else	# everything seems to be fine
 				emb_arch4ld=`gawk '/#define[[:space:]]+__AVR_ARCH__[[:space:]]+[[:digit:]]+/ {print $3}' $EMBDEFS_FILE`
-				if [[ "$emb_arch4ld" -eq 4 || "$emb_arch4ld" -eq 5  || "$emb_arch4ld" -eq 51 ]]
+				if [[ "$emb_arch4ld" -eq 4 || "$emb_arch4ld" -eq 5  || "$emb_arch4ld" -eq 51 || "$emb_arch4ld" -eq 6 ]]
 				then	# for now, we only support devices of type avr4, avr5 and avr51
 					echo "MCU = $emb_device" >> "$EMBINIT_FILE"
 					echo "EMB_FLASHEND = $emb_flashend" >> "$EMBINIT_FILE"
