@@ -1,0 +1,23 @@
+#summary Instructions how to get started with teh avr etherboot bootloader
+#labels Phase-Deploy,Featured
+= How to get started =
+
+
+= Introduction =
+
+This document describes how to get started using the etherboot bootloader for avr devices.
+
+= Prerequisites = 
+
+You need the latest Version of WinAVR to compile the code (At the moment this is 20090313 and can be downloaded [http://sourceforge.net/project/showfiles.php?group_id=68108 here]).
+
+You will need a TFTP server for supplying the application firmware file to the bootloader.
+
+Optionally you need a DHCP Server for supplying an IP address for the device and the IP address of the TFTP server and the filename of the file to be loaded and programmed.
+
+= Configuring the bootloader = 
+
+You can select from two different version of the bootloader namely "small" and "medium".
+The small version uses fixed ip address for itself and for the TFTP server to contact. The medium version contains a DHCP client implementation which requests the configuration data from a DHCP server.
+
+= Compiling the code =
