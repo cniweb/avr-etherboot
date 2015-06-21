@@ -5,7 +5,7 @@
 # v1.0 27.02.09
 #
 # based on 
-# WinAVR Makefile Template written by Eric B. Weddington, Jörg Wunsch, et al.
+# WinAVR Makefile Template written by Eric B. Weddington, JÃ¶rg Wunsch, et al.
 # Additional material for this makefile was written by:
 # Peter Fleury
 # Tim Henigan
@@ -351,7 +351,7 @@ DEBUG_HOST = localhost
 
 
 # Define programs and commands.
-SHELL = sh
+SHELL = bash
 CC = avr-gcc
 OBJCOPY = avr-objcopy
 OBJDUMP = avr-objdump
