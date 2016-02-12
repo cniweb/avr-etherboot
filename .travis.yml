@@ -1,0 +1,30 @@
+language: c
+
+before_install:
+  - echo -e "machine github.com\n  login $GH_TOKEN" >> ~/.netrc
+  - sudo apt-get update -qq
+
+install:
+  - sudo apt-get install -qq gcc-avr binutils-avr avr-libc
+
+script:
+  - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
+  - echo $FILE_NAME
+  - cd ./device_001/
+  - make
+  - ls
+  - zip $FILE_NAME *.hex
+  
+deploy:
+  skip_cleanup: true
+  provider: releases
+  api_key:
+    secure: $GH_TOKEN
+  file: 
+    - $FILE_NAME
+  on:
+    tags: true
+
+notifications:
+  email:
+    - c-n-i@web.de
