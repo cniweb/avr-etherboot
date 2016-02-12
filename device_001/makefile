@@ -585,7 +585,8 @@ makefile.in :
 # we need to manipulate the PATH variable of the shell to be able
 # to call a script that does not reside in the current directory
 # this is a hack for the windows version of the GNU shell
-	PATH=$$PATH:$(SCRIPTPATH); . $(SCRIPTFILE) $(CC) $(SCRIPTPATH) $(STAT_BLSECSIZE)
+#PATH=$$PATH:$(SCRIPTPATH); . $(SCRIPTFILE) $(CC) $(SCRIPTPATH) $(STAT_BLSECSIZE)
+PATH=$$PATH:$(SCRIPTPATH); . $(CC) $(SCRIPTPATH) $(STAT_BLSECSIZE)
 
 # Compile: create object files from C source files.
 $(OBJDIR)/%.o : ../%.c  makefile.in
