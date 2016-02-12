@@ -2,13 +2,13 @@
 #include "eemem.h"
 
 
-unsigned long EEMEM mlIpEEP = IP(192,168,2,131);
-unsigned long EEMEM mlNetmaskEEP = IP(255,255,0,0);
-unsigned long EEMEM mlGatewayEEP = IP(0,0,0,0);
-unsigned long EEMEM mlDNSserverEEP = IP(0,0,0,0); //0x0302a8c0;
+unsigned long EEMEM mlIpEEP = IP(192,168,178,225);
+unsigned long EEMEM mlNetmaskEEP = IP(255,255,255,0);
+unsigned long EEMEM mlGatewayEEP = IP(192,168,178,1);
+unsigned long EEMEM mlDNSserverEEP = IP(192,168,178,1); //0x0302a8c0;
 
 #ifdef FIXED_TFTP_SRV
-unsigned long EEMEM mlTFTPipEEP = IP(192,168,2,2);
+unsigned long EEMEM mlTFTPipEEP = IP(192,168,178,2);
 #endif
 
 //************
