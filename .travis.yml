@@ -11,7 +11,8 @@ script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
   - echo $FILE_NAME
   - cd ./device_001/
-  - make 1
+  - set -- 1 2
+  - make all
   - ls
   - zip $FILE_NAME *.hex
   
