@@ -363,7 +363,7 @@ REMOVEDIR = rm -rf
 COPY = cp
 WINSHELL = cmd
 # name of the helper script that creates makefile.in
-SCRIPTFILE = configure.sh
+#SCRIPTFILE = configure.sh
 #name of the script that checks the .text section size
 SCRIPTCHECK = checksize.sh
 
