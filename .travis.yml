@@ -13,7 +13,8 @@ script:
   - mkdir fw_bootloader
   - cd device_002
   - make clean
-  - make
+  - ls
+  - make -mmcu=atmega64 -dM -E "foo.c"
   - cp device_002.hex ../fw_bootloader
   - cp device_002.eep ../fw_bootloader
   - cd ../fw_bootloader
