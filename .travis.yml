@@ -12,7 +12,6 @@ script:
   - echo $FILE_NAME
   - mkdir fw_bootloader
   - cd device_002
-  - make clean
   - ls
   - make -Demb_reply=atmega64
   - ls
