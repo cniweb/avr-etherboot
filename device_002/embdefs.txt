@@ -1,1 +1,0 @@
--mmcu=atmega64 -dM -E "foo.c"
