@@ -13,7 +13,9 @@ script:
   - mkdir fw_bootloader
   - cd device_002
   - ls
-  - make -Demb_reply=atmega64
+  - make clean
+  - ls
+  - make < make.input
   - ls
   - cp device_002.hex ../fw_bootloader
   - cp device_002.eep ../fw_bootloader
