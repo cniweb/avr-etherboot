@@ -2,26 +2,16 @@ language: c
 
 before_install:
   - echo -e "machine github.com\n  login $GH_TOKEN" >> ~/.netrc
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
 
-#install:
-#  - sudo apt-get install -qq gcc-avr  
-
-addons:
-  apt:
-    sources:
-    # add PPAs with more up-to-date toolchains
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-precise-3.6
-    packages:
-    # install toolchains
-    - gcc-avr
-    - binutils-avr
-    - avr-libc
+install:
+  - sudo apt-get install -qq gcc-4.7 gcc-avr binutils-avr avr-libc
 
 script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
   - echo $FILE_NAME
+  - avr-gcc -v
   - mkdir fw_bootloader
   - cd device_002
   - ls
