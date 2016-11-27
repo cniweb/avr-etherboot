@@ -13,8 +13,6 @@ script:
   - mkdir fw_bootloader
   - cd device_002
   - ls
-  - make clean
-  - ls
   - make < make.input
   - ls
   - cp device_002.hex ../fw_bootloader
