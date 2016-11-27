@@ -4,8 +4,20 @@ before_install:
   - echo -e "machine github.com\n  login $GH_TOKEN" >> ~/.netrc
   - sudo apt-get update -qq
 
-install:
-  - sudo apt-get install -qq gcc-avr binutils-avr avr-libc
+#install:
+#  - sudo apt-get install -qq gcc-avr  
+
+addons:
+  apt:
+    sources:
+    # add PPAs with more up-to-date toolchains
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.6
+    packages:
+    # install toolchains
+    - gcc-avr
+    - binutils-avr
+    - avr-libc
 
 script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
@@ -15,11 +27,11 @@ script:
   - ls
   - make < make.input
   - ls
-  - cp device_002.hex ../fw_bootloader
-  - cp device_002.eep ../fw_bootloader
-  - cd ../fw_bootloader
-  - ls
-  - zip $FILE_NAME device_002.hex device_002.eep
+#  - cp device_002.hex ../fw_bootloader
+#  - cp device_002.eep ../fw_bootloader
+#  - cd ../fw_bootloader
+#  - ls
+#  - zip $FILE_NAME device_002.hex device_002.eep
   
 deploy:
   skip_cleanup: true
