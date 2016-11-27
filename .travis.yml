@@ -13,7 +13,7 @@ script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
   - echo $FILE_NAME
   - mkdir fw_bootloader
-  - cd device_001
+  - cd device_002
   - ls
   - make < make.input
   - ls
