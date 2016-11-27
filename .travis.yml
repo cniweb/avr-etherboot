@@ -4,14 +4,10 @@ language: c
 
 before_install:
   - echo -e "machine github.com\n  login $GH_TOKEN" >> ~/.netrc
-#  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-#  - sudo apt-get update -qq
+  - sudo apt-get update -qq
 
 install:
-#  - sudo apt-get install gcc-4.9 -y
-#  - gcc -v
   - sudo apt-get install -qq gcc-avr binutils-avr avr-libc -y
-#  - avr-gcc -v
 
 script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
