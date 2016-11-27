@@ -1,3 +1,5 @@
+sudo: required
+dist: trusty
 language: c
 
 before_install:
@@ -6,7 +8,7 @@ before_install:
   - sudo apt-get update -qq
 
 install:
-  - sudo apt-get install gcc-4.9 -y
+#  - sudo apt-get install gcc-4.9 -y
   - gcc -v
   - sudo apt-get install -qq gcc-avr binutils-avr avr-libc -y
   - avr-gcc -v
