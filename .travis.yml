@@ -11,17 +11,17 @@ install:
 
 script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
-  - echo $FILE_NAME
-  - mkdir fw_bootloader
+#  - echo $FILE_NAME
+#  - mkdir fw_bootloader
   - cd device_002
-  - ls
+#  - ls
   - make < make.input
-  - ls
+#  - ls
 #  - cp device_002.hex ../fw_bootloader
 #  - cp device_002.eep ../fw_bootloader
 #  - cd ../fw_bootloader
-#  - ls
-#  - zip $FILE_NAME device_002.hex device_002.eep
+  - zip $FILE_NAME device_002.hex device_002.eep
+  - ls
   
 deploy:
   skip_cleanup: true
