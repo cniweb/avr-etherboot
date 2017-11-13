@@ -7,7 +7,7 @@ before_install:
   - sudo apt-get update -qq
 
 install:
-  - sudo apt-get install -qq gcc-avr binutils-avr avr-libc -y
+  - sudo apt-get install -qq gcc-avr binutils-avr avr-libc dc -y
 
 script:
   - export FILE_NAME=AVR-ETHERBOOT-$TRAVIS_BRANCH-All-HEX.zip
