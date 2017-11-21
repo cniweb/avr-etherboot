@@ -94,7 +94,7 @@ int main(void)
 	initializeHardware();
 	
 #if DEBUG_AV
-	// Debugging über UART (Mega32)
+	// Debugging ï¿½ber UART (Mega32)
 	//DDRD = (1<<PD1);
 	//PORTD = 0;
 	UCSRB = ( 1 << TXEN );							// UART TX einschalten
@@ -330,7 +330,7 @@ void tftp_get (void)
 		return;
 	}
 
-	// TFTP: Zielport ändern auf SourcePort des empfangenen Pakets (TID)
+	// TFTP: Zielport ï¿½ndern auf SourcePort des empfangenen Pakets (TID)
 	sock.DestinationPort = htons(UDP_packet->UDP_SourcePort);
 
 	if ((sock.BlockNumber + 1) != htons(tftp->blockNumber))
@@ -370,14 +370,14 @@ void tftp_get (void)
 	putpgmstring(" block processing\r\n");
 #endif	
 
-	// Größe der Daten eintragen
+	// Grï¿½ï¿½e der Daten eintragen
 	sock.Bufferfill = htons(UDP_packet->UDP_Datalenght) - UDP_HDR_LEN;
 
 	// last packet is shorter than 516 bytes
 	if (sock.Bufferfill < 516)
 		lastPacket = 1;
 
-	// Offset für UDP-Daten im Ethernetfrane berechnen
+	// Offset fï¿½r UDP-Daten im Ethernetfrane berechnen
 	
 	sock.DataStartOffset = ETH_HDR_LEN + ((IP_packet->IP_Version_Headerlen & 0x0f) * 4 ) + UDP_HDR_LEN;
 	
@@ -528,7 +528,7 @@ void processLineBuffer(uint8_t bytes)
 	{
 		case 0x00: // data record
 			len = lineBuffer[0];
-			currentAddress = baseAddress + (lineBuffer[1] << 8) + lineBuffer[2];
+			currentAddress = baseAddress + (uint32_t)((lineBuffer[1] << 8) + lineBuffer[2]);
 			// copy data to boot page
 			for (i=0; i<len; i+=2)
 			{
