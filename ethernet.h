@@ -73,10 +73,10 @@ struct ETH_header {
 //Aufbau eines ARP Header
 //	
 //	2 BYTE Hardware Typ					|	2 BYTE Protokoll Typ	
-//	1 BYTE Länge Hardwareadresse (MAC)	|	1 BYTE Länge Protokolladresse (IP)
+//	1 BYTE LÃ¤nge Hardwareadresse (MAC)	|	1 BYTE LÃ¤nge Protokolladresse (IP)
 //	2 BYTE Operation
 //	6 BYTE MAC Adresse Absender			|	4 BYTE IP Adresse Absender
-//	6 BYTE MAC Adresse Empfänger		|	4 BYTE IP Adresse Empfänger	
+//	6 BYTE MAC Adresse EmpfÃ¤nger		|	4 BYTE IP Adresse EmpfÃ¤nger	
 struct ARP_header {
 	unsigned int HWtype;				// 2 Byte
 	unsigned int Protocoltype;			// 2 Byte
@@ -92,23 +92,23 @@ struct ARP_header {
 //----------------------------------------------------------------------------
 //Aufbau eines IP Datagramms (B=BIT)
 //	
-//4B Version	|4B Headergr.	|8B Tos	|16B Gesamtlänge in Bytes	
+//4B Version	|4B Headergr.	|8B Tos	|16B GesamtlÃ¤nge in Bytes	
 //16B Identifikation			|3B Schalter	|13B Fragmentierungsposition
-//8B Time to Live	|8B Protokoll	|16B Header Prüfsumme 
+//8B Time to Live	|8B Protokoll	|16B Header PrÃ¼fsumme 
 //32B IP Quelladresse
 //32B IB Zieladresse
 struct IP_header	{
 	unsigned char	IP_Version_Headerlen;	//4 BIT Die Versionsnummer von IP, 
-											//meistens also 4 + 4Bit Headergröße 	
+											//meistens also 4 + 4Bit HeadergrÃ¶ÃŸe 	
 	unsigned char	IP_Tos;					//Type of Service
-	unsigned int	IP_Totallenght;			//16 Bit Komplette Läng des IP Datagrams in Bytes
-	unsigned int	IP_Id;					//ID des Packet für Fragmentierung oder 
+	unsigned int	IP_Totallenght;			//16 Bit Komplette LÃ¤ng des IP Datagrams in Bytes
+	unsigned int	IP_Id;					//ID des Packet fÃ¼r Fragmentierung oder 
 											//Reassemblierung
 	unsigned char	IP_Flags;
 	unsigned char	IP_Frag_Offset;			//wird benutzt um ein fragmentiertes 
 											//IP Packet wieder korrekt zusammenzusetzen
 	unsigned char	IP_ttl;					//8 Bit Time to Live die lebenszeit eines Paket
-	unsigned char	IP_Proto;				//Zeigt das höherschichtige Protokoll an 
+	unsigned char	IP_Proto;				//Zeigt das hÃ¶herschichtige Protokoll an 
 											//(TCP, UDP, ICMP)
 	unsigned int	IP_Hdr_Cksum;			//Checksumme des IP Headers
 	unsigned long	IP_Srcaddr;				//32 Bit IP Quelladresse

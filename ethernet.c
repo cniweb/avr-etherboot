@@ -140,7 +140,7 @@ void Make_IP_Header (unsigned char *buffer, unsigned long dest_ip)
     ip->IP_Srcaddr		= mlIP;
     ip->IP_Hdr_Cksum	= 0;
   
-    //Berechnung der IP Header länge  
+    //Berechnung der IP Header lÃ¤nge  
     result16 = (ip->IP_Version_Headerlen & 0x0F) << 2;
 
     //jetzt wird die Checksumme berechnet
