@@ -1,5 +1,31 @@
 # Changelog
 
+## Revision: 32
+
+### Author: cniweb
+
+### Date: 22:07, Dienstag, 21. November 2017
+
+### Message:
+
+#### ethernetbootloader:
+
+- bugfix: change currentAddress to uint32_t.
+
+
+## Revision: 31
+
+### Author: cniweb
+
+### Date: 10:43, Dienstag, 14. November 2017
+
+### Message:
+
+#### ethernetbootloader:
+
+- add travis CI-build.
+
+
 ## Revision: 30local
 
 ### Author: jkrause
@@ -38,6 +64,3 @@
 ### Message:
 
 - added bootloader project
-
-
-
